@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Admin\UserController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -18,6 +19,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', function () {
             return Inertia::render('admin/dashboard');
         })->name('dashboard');
+        
+        // User Management Routes
+        Route::resource('users', UserController::class);
+        Route::put('users/{user}/verification', [UserController::class, 'updateVerification'])->name('users.update-verification');
     });
 });
 
