@@ -14,6 +14,9 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+// API endpoint untuk dashboard admin - pastikan ini tersedia tanpa middleware
+Route::get('/api/admin/dashboard', [DashboardController::class, 'apiData']);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Main dashboard route - redirects to the appropriate dashboard based on role
     Route::get('/dashboard', function () {

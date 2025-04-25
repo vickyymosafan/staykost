@@ -23,19 +23,45 @@ class DashboardController extends Controller
     /**
      * API untuk mendapatkan data dashboard admin
      */
-    public function apiData()
+    public function apiData(Request $request)
     {
+        // Ambil parameter periode dari request
+        $period = $request->input('period', 'bulan-ini');
+        
         // Hitung total pengguna
         $totalUsers = User::count();
         
         // Hitung total properti
         $totalProperties = Property::count();
         
-        // Hitung pendapatan bulan ini
-        $currentMonth = now()->format('m');
-        $currentYear = now()->format('Y');
-        $monthlyRevenue = Booking::whereMonth('created_at', $currentMonth)
-            ->whereYear('created_at', $currentYear)
+        // Tentukan rentang waktu berdasarkan periode
+        $startDate = now();
+        $endDate = now();
+        
+        switch ($period) {
+            case 'hari-ini':
+                $startDate = now()->startOfDay();
+                $endDate = now()->endOfDay();
+                break;
+            case 'minggu-ini':
+                $startDate = now()->startOfWeek();
+                $endDate = now()->endOfWeek();
+                break;
+            case 'bulan-ini':
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+            case 'tahun-ini':
+                $startDate = now()->startOfYear();
+                $endDate = now()->endOfYear();
+                break;
+            default:
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+        }
+        
+        // Hitung pendapatan berdasarkan periode
+        $monthlyRevenue = Booking::whereBetween('created_at', [$startDate, $endDate])
             ->where('status', 'confirmed')
             ->sum('total_price');
         
@@ -131,6 +157,7 @@ class DashboardController extends Controller
                 'occupancyRate' => $occupancyRate,
             ],
             'recentActivities' => $recentActivities,
+            'period' => $period,
         ]);
     }
 }

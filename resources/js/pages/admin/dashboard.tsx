@@ -1,7 +1,7 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { User, UserPlus, UserCheck, ShieldCheck, Building, Tag, Flag, BarChart3, DollarSign, Calendar, Users, Bell, Activity, Clock, MoreHorizontal } from 'lucide-react';
+import { User, UserPlus, UserCheck, ShieldCheck, Building, Tag, Flag, BarChart3, DollarSign, Calendar, Users, Bell, Activity, Clock, MoreHorizontal, Download, Filter, Database, Home, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -10,6 +10,14 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
+
+// Periksa jika komponen Alert tersedia, jika tidak, gunakan Card sebagai pengganti
+try {
+    require('@/components/ui/alert');
+} catch (error) {
+    console.warn('Alert component not available, using Card instead');
+}
 
 interface DashboardProps {
     stats: {
@@ -33,6 +41,7 @@ interface DashboardProps {
 export default function Dashboard() {
     const { auth } = usePage().props as any;
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalProperties: 0,
@@ -40,16 +49,21 @@ export default function Dashboard() {
         occupancyRate: 0
     });
     const [recentActivities, setRecentActivities] = useState([]);
+    const [selectedPeriod, setSelectedPeriod] = useState('bulan-ini'); // 'hari-ini', 'minggu-ini', 'bulan-ini', 'tahun-ini'
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(route('api.admin.dashboard'));
+                setError(null);
+                const response = await axios.get('/api/admin/dashboard', {
+                    params: { period: selectedPeriod }
+                });
                 setStats(response.data.stats);
                 setRecentActivities(response.data.recentActivities);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
+                setError('Gagal memuat data dashboard. Silakan coba lagi nanti.');
                 toast.error('Gagal memuat data dashboard');
             } finally {
                 setLoading(false);
@@ -57,7 +71,7 @@ export default function Dashboard() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [selectedPeriod]);
 
     // Format currency to IDR
     const formatCurrency = (amount: number) => {
@@ -88,15 +102,15 @@ export default function Dashboard() {
 
     // Generate avatar initials
     const getInitials = (name: string) => {
-        return name.split(' ').map(part => part[0]).join('').toUpperCase();
+        return name.split(' ').map(part => part.charAt(0)).join('').toUpperCase();
     };
 
     // Stats to display
     const statsDisplay = [
-        { title: 'Total Pengguna', value: stats.totalUsers.toLocaleString('id-ID'), icon: <Users className='h-5 w-5' /> },
-        { title: 'Total Properti', value: stats.totalProperties.toLocaleString('id-ID'), icon: <Building className='h-5 w-5' /> },
-        { title: 'Pendapatan Bulan Ini', value: formatCurrency(stats.monthlyRevenue), icon: <DollarSign className='h-5 w-5' /> },
-        { title: 'Tingkat Okupansi', value: `${stats.occupancyRate}%`, icon: <BarChart3 className='h-5 w-5' /> },
+        { title: 'Total Pengguna', value: stats.totalUsers.toLocaleString('id-ID'), icon: <Users className='h-5 w-5 text-primary' />, href: '/admin/users' },
+        { title: 'Total Properti', value: stats.totalProperties.toLocaleString('id-ID'), icon: <Building className='h-5 w-5 text-primary' />, href: '/admin/properties' },
+        { title: 'Pendapatan Bulan Ini', value: formatCurrency(stats.monthlyRevenue), icon: <DollarSign className='h-5 w-5 text-primary' />, href: '/admin/transactions' },
+        { title: 'Tingkat Okupansi', value: `${stats.occupancyRate}%`, icon: <BarChart3 className='h-5 w-5 text-primary' />, href: '/admin/properties' },
     ];
 
     // Skeleton loader for stats
@@ -128,6 +142,14 @@ export default function Dashboard() {
         </div>
     );
 
+    // Filter Period options
+    const periodOptions = [
+        { value: 'hari-ini', label: 'Hari Ini' },
+        { value: 'minggu-ini', label: 'Minggu Ini' },
+        { value: 'bulan-ini', label: 'Bulan Ini' },
+        { value: 'tahun-ini', label: 'Tahun Ini' },
+    ];
+
     return (
         <AppLayout>
             <Head title='Dashboard Admin' />
@@ -138,12 +160,20 @@ export default function Dashboard() {
                         <p className='text-muted-foreground mt-1'>Kelola pengguna, properti, dan pengaturan sistem</p>
                     </div>
                     <div className='flex items-center gap-2'>
+                        <div className='flex items-center gap-2 border rounded-md p-1 bg-card'>
+                            {periodOptions.map((option) => (
+                                <Button 
+                                    key={option.value}
+                                    variant={selectedPeriod === option.value ? 'default' : 'ghost'} 
+                                    size='sm'
+                                    onClick={() => setSelectedPeriod(option.value)}
+                                >
+                                    {option.label}
+                                </Button>
+                            ))}
+                        </div>
                         <Button variant='outline' size='sm'>
-                            <Calendar className='mr-2 h-4 w-4' />
-                            Filter Tanggal
-                        </Button>
-                        <Button variant='outline' size='sm'>
-                            <BarChart3 className='mr-2 h-4 w-4' />
+                            <Download className='mr-2 h-4 w-4' />
                             Ekspor Laporan
                         </Button>
                         <Button size='sm'>
@@ -153,6 +183,15 @@ export default function Dashboard() {
                         </Button>
                     </div>
                 </div>
+
+                {error && (
+                    <Card className='border-red-500 mb-4 bg-red-50'>
+                        <CardContent className='p-4 flex items-center gap-2'>
+                            <AlertCircle className='h-4 w-4 text-red-500' />
+                            <p className='text-red-700'>{error}</p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Statistik Utama */}
                 <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-4'>
@@ -165,7 +204,7 @@ export default function Dashboard() {
                         </>
                     ) : (
                         statsDisplay.map((stat, index) => (
-                            <Card key={index} className='shadow-sm hover:shadow-md transition-all'>
+                            <Card key={index} className='shadow-sm hover:shadow-md transition-all h-full'>
                                 <CardContent className='p-6'>
                                     <div className='flex items-center justify-between'>
                                         <div>
@@ -191,7 +230,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className='grid auto-rows-min gap-6 md:grid-cols-3'>
-                                <Link href={route('admin.users.index')} className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
+                                <Link href='/admin/users' className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
                                     <div className='rounded-full bg-primary/10 p-3 mb-3'>
                                         <User className='h-6 w-6 text-primary' />
                                     </div>
@@ -199,7 +238,7 @@ export default function Dashboard() {
                                     <p className='text-sm text-muted-foreground text-center mt-1'>Kelola semua pengguna</p>
                                 </Link>
                                 
-                                <Link href={route('admin.properties.index')} className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
+                                <Link href='/admin/properties' className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
                                     <div className='rounded-full bg-primary/10 p-3 mb-3'>
                                         <Building className='h-6 w-6 text-primary' />
                                     </div>
@@ -207,7 +246,7 @@ export default function Dashboard() {
                                     <p className='text-sm text-muted-foreground text-center mt-1'>Kelola dan moderasi properti</p>
                                 </Link>
                                 
-                                <Link href={route('admin.content-moderation.index')} className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
+                                <Link href='/admin/content-moderation' className='flex flex-col items-center p-6 rounded-xl border bg-card text-card-foreground transition-all hover:bg-accent/40 hover:-translate-y-1'>
                                     <div className='rounded-full bg-primary/10 p-3 mb-3'>
                                         <Flag className='h-6 w-6 text-primary' />
                                     </div>
@@ -223,10 +262,8 @@ export default function Dashboard() {
                         <CardHeader className='pb-3'>
                             <div className='flex items-center justify-between'>
                                 <CardTitle>Aktivitas Terbaru</CardTitle>
-                                <Button variant='ghost' size='icon' asChild>
-                                    <Link href={route('admin.activities.index')}>
-                                        <MoreHorizontal className='h-4 w-4' />
-                                    </Link>
+                                <Button variant='ghost' size='icon'>
+                                    <MoreHorizontal className='h-4 w-4' />
                                 </Button>
                             </div>
                         </CardHeader>
@@ -268,10 +305,8 @@ export default function Dashboard() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button variant='outline' size='sm' className='w-full' asChild>
-                                <Link href={route('admin.activities.index')}>
-                                    Lihat Semua Aktivitas
-                                </Link>
+                            <Button variant='outline' size='sm' className='w-full'>
+                                Lihat Semua Aktivitas
                             </Button>
                         </CardFooter>
                     </Card>
@@ -292,7 +327,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className='grid gap-4 md:grid-cols-2'>
-                                <Link href={route('admin.properties.index', { status: 'pending' })} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <Link href='/admin/properties?status=pending' className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Persetujuan Listing</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Validasi dan moderasi listing properti baru</p>
                                     <ul className='text-sm space-y-1'>
@@ -302,7 +337,7 @@ export default function Dashboard() {
                                     </ul>
                                 </Link>
                                 
-                                <Link href={route('admin.categories.index')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <Link href='/admin/categories' className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Kategori & Tagging</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Kelola kategori dan tag untuk properti</p>
                                     <ul className='text-sm space-y-1'>
@@ -312,7 +347,7 @@ export default function Dashboard() {
                                     </ul>
                                 </Link>
                                 
-                                <Link href={route('admin.content-moderation.keywords')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <Link href='/admin/content-moderation/keywords' className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Kata Terlarang</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Kelola kata-kata yang tidak diperbolehkan</p>
                                     <ul className='text-sm space-y-1'>
@@ -322,7 +357,7 @@ export default function Dashboard() {
                                     </ul>
                                 </Link>
                                 
-                                <Link href={route('admin.content-moderation.index')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <Link href='/admin/content-moderation' className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Konten Ditandai</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Periksa konten yang dilaporkan pengguna</p>
                                     <ul className='text-sm space-y-1'>
@@ -349,7 +384,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className='grid gap-4 md:grid-cols-2'>
-                                <Link href={route('admin.transactions.index')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <div className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Transaksi</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Kelola semua transaksi pembayaran</p>
                                     <ul className='text-sm space-y-1'>
@@ -357,9 +392,9 @@ export default function Dashboard() {
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Konfirmasi pembayaran manual</li>
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Filter transaksi</li>
                                     </ul>
-                                </Link>
+                                </div>
                                 
-                                <Link href={route('admin.finance.refunds')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <div className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Refund & Pembatalan</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Proses permintaan pengembalian dana</p>
                                     <ul className='text-sm space-y-1'>
@@ -367,9 +402,9 @@ export default function Dashboard() {
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Proses pembatalan booking</li>
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Kalkulasi biaya pembatalan</li>
                                     </ul>
-                                </Link>
+                                </div>
                                 
-                                <Link href={route('admin.finance.settlements')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <div className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Settlement</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Kelola pembayaran ke pemilik kost</p>
                                     <ul className='text-sm space-y-1'>
@@ -377,9 +412,9 @@ export default function Dashboard() {
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Periksa status transfer</li>
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Riwayat settlement</li>
                                     </ul>
-                                </Link>
+                                </div>
                                 
-                                <Link href={route('admin.finance.reports')} className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
+                                <div className='group rounded-lg border p-4 transition-all hover:bg-accent/40 hover:border-primary/20'>
                                     <h3 className='font-medium mb-2 group-hover:text-primary transition-colors'>Laporan Keuangan</h3>
                                     <p className='text-sm text-muted-foreground mb-2'>Lihat dan ekspor laporan keuangan</p>
                                     <ul className='text-sm space-y-1'>
@@ -387,7 +422,7 @@ export default function Dashboard() {
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Analisis revenue</li>
                                         <li className='flex items-center gap-1'><span className='h-1.5 w-1.5 rounded-full bg-primary/70'></span> Ekspor laporan PDF/Excel</li>
                                     </ul>
-                                </Link>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
