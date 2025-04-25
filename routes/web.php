@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\FacilityController;
 use App\Http\Controllers\Admin\ContentModerationController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -21,9 +22,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Admin routes group
     Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('admin/dashboard');
-        })->name('dashboard');
+        // Dashboard routes
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/api/dashboard', [DashboardController::class, 'apiData'])->name('api.dashboard');
         
         // User Management Routes
         Route::resource('users', UserController::class);
@@ -62,6 +63,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/keywords/{forbiddenKeyword}', [ContentModerationController::class, 'updateKeyword'])->name('keywords.update');
             Route::delete('/keywords/{forbiddenKeyword}', [ContentModerationController::class, 'destroyKeyword'])->name('keywords.destroy');
         });
+
+        // Placeholder routes for finance and transactions sections
+        Route::prefix('transactions')->name('transactions.')->group(function () {
+            Route::get('/', function () { return Inertia::render('admin/transactions/index'); })->name('index');
+        });
+
+        Route::prefix('finance')->name('finance.')->group(function () {
+            Route::get('/refunds', function () { return Inertia::render('admin/finance/refunds'); })->name('refunds');
+            Route::get('/settlements', function () { return Inertia::render('admin/finance/settlements'); })->name('settlements');
+            Route::get('/reports', function () { return Inertia::render('admin/finance/reports'); })->name('reports');
+        });
+
+        // Placeholder routes for activities
+        Route::get('/activities', function () {
+            return Inertia::render('admin/activities/index');
+        })->name('activities.index');
     });
 });
 
