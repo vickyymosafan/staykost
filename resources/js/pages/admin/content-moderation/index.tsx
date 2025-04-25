@@ -7,6 +7,7 @@ import { Flag, Eye, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect } from 'react';
 
 interface User {
   id: number;
@@ -21,17 +22,16 @@ interface ContentFlag {
   reason: string;
   details: string | null;
   status: 'pending' | 'reviewed' | 'rejected' | 'actioned';
-  reported_by: User | null;
-  reviewed_by: User | null;
+  reporter: User | null; 
+  reviewer: User | null; 
   reviewed_at: string | null;
   created_at: string;
-  flaggable: any; // This could be a property, review, etc.
+  flaggable: any; 
 }
 
 interface ContentFlagsIndexProps {
-  contentFlags: {
+  contentFlags?: {
     data: ContentFlag[];
-    links: any;
     meta: {
       current_page: number;
       from: number;
@@ -42,29 +42,35 @@ interface ContentFlagsIndexProps {
       total: number;
     };
   };
-  status: string;
+  filters?: {
+    status: string;
+  };
 }
 
-export default function ContentFlagsIndex({ contentFlags, status }: ContentFlagsIndexProps) {
-  // Function to render the flaggable item name
+export default function ContentFlagsIndex({ contentFlags, filters }: ContentFlagsIndexProps) {
+  const [activeStatus, setActiveStatus] = useState(filters?.status || 'pending');
+  
+  useEffect(() => {
+    if (filters?.status && filters.status !== activeStatus) {
+      setActiveStatus(filters.status);
+    }
+  }, [filters]);
+  
   const getFlaggableName = (flag: ContentFlag) => {
     if (!flag.flaggable) return 'Konten tidak ditemukan';
     
-    // Determine name based on flaggable type
     if (flag.flaggable_type.includes('Property')) {
       return flag.flaggable.name || 'Properti';
     }
     return 'Konten';
   };
 
-  // Function to format the flaggable type for display
   const formatFlaggableType = (type: string) => {
     if (type.includes('Property')) return 'Properti';
     if (type.includes('Review')) return 'Ulasan';
     return type.split('\\').pop() || type;
   };
 
-  // Function to render the status badge
   const renderStatus = (status: string) => {
     switch (status) {
       case 'pending':
@@ -81,16 +87,20 @@ export default function ContentFlagsIndex({ contentFlags, status }: ContentFlags
   };
 
   const handleStatusChange = (value: string) => {
-    router.get(route('admin.content-moderation.index', { status: value }));
+    setActiveStatus(value);
+    router.get(route('admin.content-moderation.index'), { status: value }, {
+      preserveState: true,
+      replace: true,
+    });
   };
 
   return (
     <AppLayout>
       <Head title="Moderasi Konten" />
-      <div className="flex h-full flex-1 flex-col gap-4 p-4">
-        <div className="flex justify-between items-center">
+      <div className="container py-6">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Moderasi Konten</h1>
+            <h1 className="text-2xl font-bold">Moderasi Konten</h1>
             <p className="text-muted-foreground">Kelola laporan dan konten yang ditandai</p>
           </div>
           <Button asChild>
@@ -102,15 +112,15 @@ export default function ContentFlagsIndex({ contentFlags, status }: ContentFlags
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <CardTitle>Konten Yang Ditandai</CardTitle>
                 <CardDescription>Laporan konten yang bermasalah</CardDescription>
               </div>
-              <div className="flex items-center gap-3">
-                <Select defaultValue={status} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="w-[180px]">
+              <div className="w-full sm:w-72">
+                <Select value={activeStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
                     <SelectValue placeholder="Filter Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -135,47 +145,50 @@ export default function ContentFlagsIndex({ contentFlags, status }: ContentFlags
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contentFlags.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center">
-                        <Flag className="h-10 w-10 mb-2 text-muted-foreground/50" />
-                        <p>Tidak ada konten yang ditandai</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                {contentFlags && contentFlags.data && contentFlags.data.length > 0 ? (
                   contentFlags.data.map((flag) => (
                     <TableRow key={flag.id}>
                       <TableCell className="font-medium">{getFlaggableName(flag)}</TableCell>
                       <TableCell>{formatFlaggableType(flag.flaggable_type)}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{flag.reason}</TableCell>
-                      <TableCell>{flag.reported_by?.name || 'Sistem'}</TableCell>
+                      <TableCell>{flag.reporter?.name || 'Sistem'}</TableCell>
                       <TableCell className="whitespace-nowrap">{new Date(flag.created_at).toLocaleDateString('id-ID')}</TableCell>
                       <TableCell>{renderStatus(flag.status)}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" asChild>
                           <Link href={route('admin.content-moderation.show', flag.id)}>
+                            <span className="sr-only">Lihat</span>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center">
+                        <Flag className="h-10 w-10 mb-2 text-muted-foreground/50" />
+                        <p>Tidak ada konten yang ditandai dengan status {activeStatus === 'pending' ? 'menunggu review' : 'sudah ditinjau'}</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
 
-            <div className="mt-6">
-              <Pagination
-                current_page={contentFlags.meta.current_page}
-                last_page={contentFlags.meta.last_page}
-                from={contentFlags.meta.from}
-                to={contentFlags.meta.to}
-                total={contentFlags.meta.total}
-                path={contentFlags.meta.path}
-              />
-            </div>
+            {contentFlags && contentFlags.meta && (
+              <div className="mt-6">
+                <Pagination
+                  current_page={contentFlags.meta.current_page}
+                  last_page={contentFlags.meta.last_page}
+                  from={contentFlags.meta.from}
+                  to={contentFlags.meta.to}
+                  total={contentFlags.meta.total}
+                  path={contentFlags.meta.path}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

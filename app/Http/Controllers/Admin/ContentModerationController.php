@@ -19,7 +19,7 @@ class ContentModerationController extends Controller
     {
         $status = $request->get('status', 'pending');
         
-        $contentFlags = ContentFlag::with(['flaggable', 'reporter'])
+        $contentFlags = ContentFlag::with(['flaggable', 'reporter', 'reviewer'])
             ->when($status === 'pending', function($query) {
                 return $query->where('status', 'pending');
             })
@@ -30,7 +30,27 @@ class ContentModerationController extends Controller
             ->paginate(10);
         
         return Inertia::render('admin/content-moderation/index', [
-            'contentFlags' => $contentFlags,
+            'contentFlags' => $contentFlags->map(function ($contentFlag) {
+                return [
+                    'id' => $contentFlag->id,
+                    'flaggable' => [
+                        'id' => $contentFlag->flaggable->id,
+                        'type' => $contentFlag->flaggable_type,
+                        'content' => $contentFlag->flaggable->content,
+                    ],
+                    'reporter' => [
+                        'id' => $contentFlag->reporter->id,
+                        'name' => $contentFlag->reporter->name,
+                    ],
+                    'reviewer' => $contentFlag->reviewer ? [
+                        'id' => $contentFlag->reviewer->id,
+                        'name' => $contentFlag->reviewer->name,
+                    ] : null,
+                    'status' => $contentFlag->status,
+                    'created_at' => $contentFlag->created_at,
+                    'updated_at' => $contentFlag->updated_at,
+                ];
+            }),
             'filters' => [
                 'status' => $status
             ]
@@ -45,7 +65,25 @@ class ContentModerationController extends Controller
         $contentFlag->load(['flaggable', 'reporter', 'reviewer']);
         
         return Inertia::render('admin/content-moderation/show', [
-            'contentFlag' => $contentFlag
+            'contentFlag' => [
+                'id' => $contentFlag->id,
+                'flaggable' => [
+                    'id' => $contentFlag->flaggable->id,
+                    'type' => $contentFlag->flaggable_type,
+                    'content' => $contentFlag->flaggable->content,
+                ],
+                'reporter' => [
+                    'id' => $contentFlag->reporter->id,
+                    'name' => $contentFlag->reporter->name,
+                ],
+                'reviewer' => $contentFlag->reviewer ? [
+                    'id' => $contentFlag->reviewer->id,
+                    'name' => $contentFlag->reviewer->name,
+                ] : null,
+                'status' => $contentFlag->status,
+                'created_at' => $contentFlag->created_at,
+                'updated_at' => $contentFlag->updated_at,
+            ]
         ]);
     }
     
@@ -78,7 +116,17 @@ class ContentModerationController extends Controller
             ->paginate(15);
         
         return Inertia::render('admin/content-moderation/keywords', [
-            'keywords' => $keywords
+            'keywords' => $keywords->map(function ($keyword) {
+                return [
+                    'id' => $keyword->id,
+                    'keyword' => $keyword->keyword,
+                    'severity' => $keyword->severity,
+                    'replacement' => $keyword->replacement,
+                    'is_active' => $keyword->is_active,
+                    'created_at' => $keyword->created_at,
+                    'updated_at' => $keyword->updated_at,
+                ];
+            })
         ]);
     }
     
