@@ -1,4 +1,3 @@
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
@@ -10,7 +9,7 @@ import AppLogo from './app-logo';
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: 'admin/dashboard' ,
+        href: route('admin.dashboard'),
         icon: LayoutGrid,
     },
 ];
@@ -22,7 +21,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="admin/dashboard" prefetch>
+                            <Link href={route('admin.dashboard')} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -37,10 +36,10 @@ export function AppSidebar() {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip={{ children: 'Home Page' }}>
+                        <SidebarMenuButton asChild tooltip={{ children: 'Halaman Utama' }}>
                             <Link href="/" prefetch>
                                 <Home className="size-4" />
-                                <span>Home Page</span>
+                                <span>Halaman Utama</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
