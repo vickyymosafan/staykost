@@ -36,17 +36,17 @@ export default function Dashboard() {
                         </div>
                     </Link>
                     
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border p-6">
+                    <Link href={route('admin.kyc.index')} className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border p-6 transition-all hover:bg-gray-50 dark:hover:bg-gray-900">
                         <div className="flex items-center gap-4">
                             <div className="rounded-lg bg-primary/10 p-2">
                                 <UserCheck className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <h3 className="font-medium">Verifikasi</h3>
-                                <p className="text-sm text-muted-foreground">Kelola verifikasi pengguna</p>
+                                <h3 className="font-medium">Verifikasi & KYC</h3>
+                                <p className="text-sm text-muted-foreground">Kelola verifikasi dokumen identitas pengguna</p>
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 </div>
                 
                 <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[50vh] flex-1 overflow-hidden rounded-xl border p-6 md:min-h-min">
