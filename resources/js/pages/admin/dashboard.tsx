@@ -36,7 +36,7 @@ export default function Dashboard() {
                         </div>
                     </Link>
                     
-                    <Link href={route('admin.kyc.index')} className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border p-6 transition-all hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <Link href={route('admin.users.index', { verification_status: 'pending' })} className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border p-6 transition-all hover:bg-gray-50 dark:hover:bg-gray-900">
                         <div className="flex items-center gap-4">
                             <div className="rounded-lg bg-primary/10 p-2">
                                 <UserCheck className="h-6 w-6 text-primary" />

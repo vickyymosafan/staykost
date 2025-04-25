@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Check, Mail, Phone, UserIcon } from 'lucide-react';
+import { ArrowLeft, Check, Mail, Phone, UserIcon, X } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
 import { Select } from '@/components/ui/form-select';
@@ -198,11 +198,43 @@ export default function UserShow({ user, idCardUrl }: Props) {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" disabled={processing}>
-                      <Check className="h-4 w-4 mr-2" /> Perbarui Verifikasi
+                    <Button type="submit" disabled={processing} className="gap-1">
+                      <Check className="h-4 w-4" /> Update Verifikasi
                     </Button>
                   </div>
                 </form>
+
+                {/* Quick Action Buttons - Added from KYC module */}
+                {user.verification_status === 'pending' && (
+                  <div className="flex justify-between mt-6 pt-4 border-t">
+                    <Button 
+                      variant="destructive" 
+                      className="gap-1"
+                      onClick={() => {
+                        if (confirm('Apakah Anda yakin ingin menolak verifikasi ini?')) {
+                          setData('verification_status', 'unverified');
+                          setData('verification_notes', data.verification_notes || 'Dokumen ditolak');
+                          put(route('admin.users.update-verification', user.id));
+                        }
+                      }}
+                    >
+                      <X className="h-4 w-4" /> Tolak Verifikasi
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      className="gap-1"
+                      onClick={() => {
+                        if (confirm('Apakah Anda yakin ingin menyetujui verifikasi ini?')) {
+                          setData('verification_status', 'verified');
+                          setData('verification_notes', data.verification_notes || 'Dokumen disetujui');
+                          put(route('admin.users.update-verification', user.id));
+                        }
+                      }}
+                    >
+                      <Check className="h-4 w-4" /> Setujui Verifikasi
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

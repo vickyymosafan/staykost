@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/form-select';
-import { Edit, Plus, Search, Trash2, User } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, User, UserCheck, Check, X } from 'lucide-react';
 import { useState, ChangeEvent } from 'react';
 
 interface PaginationLink {
@@ -159,13 +159,58 @@ export default function UserIndex({ users, filters }: Props) {
 
   return (
     <AppLayout>
-      <Head title="Manajemen Pengguna" />
+      <Head title={verificationStatus === 'pending' ? 'Verifikasi & KYC - Dokumen yang menunggu verifikasi' : 'Manajemen Pengguna'} />
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Pengguna</h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Manajemen Pengguna</h1>
+            <p className="text-muted-foreground">
+              {verificationStatus === 'pending' ? 'Verifikasi & KYC - Dokumen yang menunggu verifikasi' : 'Kelola semua pengguna dan akun'}
+            </p>
+          </div>
           <Link href={route('admin.users.create')}>
             <Button>
               <Plus className="mr-2 h-4 w-4" /> Tambah Pengguna
+            </Button>
+          </Link>
+        </div>
+
+        {/* KYC Verification Quick Filters */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
+          <Link href={route('admin.users.index', { verification_status: 'pending' })}>  
+            <Button
+              variant={verificationStatus === 'pending' ? 'default' : 'outline'}
+              className="w-full sm:w-auto gap-2"
+            >
+              <UserCheck className="h-4 w-4" />
+              Menunggu Verifikasi
+            </Button>
+          </Link>
+          <Link href={route('admin.users.index', { verification_status: 'verified' })}>  
+            <Button
+              variant={verificationStatus === 'verified' ? 'default' : 'outline'}
+              className="w-full sm:w-auto gap-2"  
+            >
+              <Check className="h-4 w-4" />
+              Terverifikasi
+            </Button>
+          </Link>
+          <Link href={route('admin.users.index', { verification_status: 'unverified' })}>  
+            <Button
+              variant={verificationStatus === 'unverified' ? 'default' : 'outline'}
+              className="w-full sm:w-auto gap-2"
+            >
+              <X className="h-4 w-4" />
+              Belum Terverifikasi
+            </Button>
+          </Link>
+          <Link href={route('admin.users.index')}>  
+            <Button
+              variant={!verificationStatus ? 'default' : 'outline'}
+              className="w-full sm:w-auto gap-2"  
+            >
+              <User className="h-4 w-4" />
+              Semua Pengguna
             </Button>
           </Link>
         </div>
