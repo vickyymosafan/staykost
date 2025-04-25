@@ -49,7 +49,7 @@ export function Pagination({ links }: { links: PaginationLink[] }) {
               isPrevious || isNext ? 'px-3' : ''
             }`}
           >
-            {isPrevious ? 'u2190 Previous' : isNext ? 'Next u2192' : label}
+            {isPrevious ? 'u2190 Sebelumnya' : isNext ? 'Berikutnya u2192' : label}
           </Link>
         ) : (
           <span
@@ -134,21 +134,21 @@ export default function UserIndex({ users, filters }: Props) {
   }
 
   function deleteUser(id: number) {
-    if (confirm('Are you sure you want to delete this user?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
       router.delete(route('admin.users.destroy', id));
     }
   }
 
   const roleLabels: Record<string, string> = {
     admin: 'Admin',
-    owner: 'Owner',
-    user: 'User',
+    owner: 'Pemilik',
+    user: 'Pengguna',
   };
 
   const verificationLabels: Record<string, string> = {
-    unverified: 'Unverified',
-    pending: 'Pending',
-    verified: 'Verified',
+    unverified: 'Belum Diverifikasi',
+    pending: 'Menunggu',
+    verified: 'Terverifikasi',
   };
 
   const verificationColors: Record<string, string> = {
@@ -159,13 +159,13 @@ export default function UserIndex({ users, filters }: Props) {
 
   return (
     <AppLayout>
-      <Head title="User Management" />
+      <Head title="Manajemen Pengguna" />
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Manajemen Pengguna</h1>
           <Link href={route('admin.users.create')}>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add User
+              <Plus className="mr-2 h-4 w-4" /> Tambah Pengguna
             </Button>
           </Link>
         </div>
@@ -175,7 +175,7 @@ export default function UserIndex({ users, filters }: Props) {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
               <Input
-                placeholder="Search users..."
+                placeholder="Cari pengguna..."
                 value={searchTerm}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && search()}
@@ -190,10 +190,10 @@ export default function UserIndex({ users, filters }: Props) {
               }}
               className="md:w-48"
             >
-              <option value="">All Roles</option>
+              <option value="">Semua Peran</option>
               <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
-              <option value="user">User</option>
+              <option value="owner">Pemilik</option>
+              <option value="user">Pengguna</option>
             </Select>
             <Select
               value={verificationStatus}
@@ -203,10 +203,10 @@ export default function UserIndex({ users, filters }: Props) {
               }}
               className="md:w-48"
             >
-              <option value="">All Verification</option>
-              <option value="unverified">Unverified</option>
-              <option value="pending">Pending</option>
-              <option value="verified">Verified</option>
+              <option value="">Semua Status Verifikasi</option>
+              <option value="unverified">Belum Diverifikasi</option>
+              <option value="pending">Menunggu</option>
+              <option value="verified">Terverifikasi</option>
             </Select>
             <Button onClick={search} className="md:w-24">
               Filter
@@ -222,7 +222,7 @@ export default function UserIndex({ users, filters }: Props) {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                     onClick={() => sort('name')}
                   >
-                    Name {sortField === 'name' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    Nama {sortField === 'name' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
                   </th>
                   <th
                     scope="col"
@@ -236,24 +236,24 @@ export default function UserIndex({ users, filters }: Props) {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                     onClick={() => sort('role')}
                   >
-                    Role {sortField === 'role' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    Peran {sortField === 'role' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                     onClick={() => sort('verification_status')}
                   >
-                    Verification {sortField === 'verification_status' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    Status Verifikasi {sortField === 'verification_status' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                     onClick={() => sort('created_at')}
                   >
-                    Created {sortField === 'created_at' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    Dibuat {sortField === 'created_at' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -261,7 +261,7 @@ export default function UserIndex({ users, filters }: Props) {
                 {users.data.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      No users found
+                      Tidak ada pengguna yang ditemukan
                     </td>
                   </tr>
                 ) : (
@@ -299,7 +299,7 @@ export default function UserIndex({ users, filters }: Props) {
                         <div className="flex justify-end space-x-2">
                           <Link href={route('admin.users.show', user.id)} className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
                             <Button variant="ghost" size="sm">
-                              View
+                              Lihat
                             </Button>
                           </Link>
                           <Link href={route('admin.users.edit', user.id)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">

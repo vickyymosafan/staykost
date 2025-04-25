@@ -61,15 +61,15 @@ export default function UserEdit({ user }: Props) {
 
   return (
     <AppLayout>
-      <Head title={`Edit User: ${user.name}`} />
+      <Head title={`Edit Pengguna: ${user.name}`} />
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
           <Link href={route('admin.users.index')}>
             <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Users
+              <ArrowLeft className="h-4 w-4 mr-2" /> Kembali ke Daftar Pengguna
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Edit User: {user.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Edit Pengguna: {user.name}</h1>
         </div>
 
         <div className="max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -77,7 +77,7 @@ export default function UserEdit({ user }: Props) {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Name
+                  Nama
                 </Label>
                 <Input
                   id="name"
@@ -109,7 +109,7 @@ export default function UserEdit({ user }: Props) {
 
               <div>
                 <Label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
+                  Kata Sandi
                 </Label>
                 <Input
                   id="password"
@@ -118,15 +118,15 @@ export default function UserEdit({ user }: Props) {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setData('password', e.target.value)}
                   className="mt-1 block w-full"
                   error={errors.password}
-                  placeholder="Leave blank to keep current password"
+                  placeholder="Biarkan kosong untuk mempertahankan kata sandi saat ini"
                 />
-                <p className="text-xs text-gray-500 mt-1">Leave blank to keep the current password</p>
+                <p className="text-xs text-gray-500 mt-1">Biarkan kosong untuk mempertahankan kata sandi saat ini</p>
                 {errors.password && <div className="text-red-500 mt-1 text-sm">{errors.password}</div>}
               </div>
 
               <div>
                 <Label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Confirm Password
+                  Konfirmasi Kata Sandi
                 </Label>
                 <Input
                   id="password_confirmation"
@@ -134,13 +134,13 @@ export default function UserEdit({ user }: Props) {
                   value={data.password_confirmation}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setData('password_confirmation', e.target.value)}
                   className="mt-1 block w-full"
-                  placeholder="Leave blank to keep current password"
+                  placeholder="Biarkan kosong untuk mempertahankan kata sandi saat ini"
                 />
               </div>
 
               <div>
                 <Label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Role
+                  Peran
                 </Label>
                 <Select
                   id="role"
@@ -151,15 +151,15 @@ export default function UserEdit({ user }: Props) {
                   error={errors.role}
                 >
                   <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
-                  <option value="user">User</option>
+                  <option value="owner">Pemilik</option>
+                  <option value="user">Pengguna</option>
                 </Select>
                 {errors.role && <div className="text-red-500 mt-1 text-sm">{errors.role}</div>}
               </div>
 
               <div>
                 <Label htmlFor="verification_status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Verification Status
+                  Status Verifikasi
                 </Label>
                 <Select
                   id="verification_status"
@@ -168,21 +168,21 @@ export default function UserEdit({ user }: Props) {
                   className="mt-1 block w-full"
                   error={errors.verification_status}
                 >
-                  <option value="unverified">Unverified</option>
-                  <option value="pending">Pending</option>
-                  <option value="verified">Verified</option>
+                  <option value="unverified">Belum Diverifikasi</option>
+                  <option value="pending">Menunggu</option>
+                  <option value="verified">Terverifikasi</option>
                 </Select>
                 {errors.verification_status && <div className="text-red-500 mt-1 text-sm">{errors.verification_status}</div>}
               </div>
 
               <div>
                 <Label htmlFor="id_card" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  ID Card (KTP/Passport)
+                  Kartu Identitas (KTP/Passport)
                 </Label>
                 {user.id_card_path && (
                   <div className="mb-2">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Current document: <a href={`/storage/${user.id_card_path}`} target="_blank" className="text-blue-600 hover:underline">View Document</a>
+                      Dokumen saat ini: <a href={`/storage/${user.id_card_path}`} target="_blank" className="text-blue-600 hover:underline">Lihat Dokumen</a>
                     </p>
                   </div>
                 )}
@@ -197,13 +197,13 @@ export default function UserEdit({ user }: Props) {
                   error={errors.id_card}
                   accept="image/jpeg,image/png,application/pdf"
                 />
-                <p className="text-xs text-gray-500 mt-1">Upload image (JPG, PNG) or PDF document</p>
+                <p className="text-xs text-gray-500 mt-1">Unggah gambar (JPG, PNG) atau dokumen PDF</p>
                 {errors.id_card && <div className="text-red-500 mt-1 text-sm">{errors.id_card}</div>}
               </div>
 
               <div>
                 <Label htmlFor="verification_notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Verification Notes
+                  Catatan Verifikasi
                 </Label>
                 <Textarea
                   id="verification_notes"
@@ -220,11 +220,11 @@ export default function UserEdit({ user }: Props) {
             <div className="flex items-center justify-end gap-4">
               <Link href={route('admin.users.index')}>
                 <Button type="button" variant="outline">
-                  Cancel
+                  Batal
                 </Button>
               </Link>
               <Button type="submit" disabled={processing}>
-                Update User
+                Perbarui Pengguna
               </Button>
             </div>
           </form>

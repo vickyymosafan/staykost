@@ -46,14 +46,14 @@ export default function UserShow({ user, idCardUrl }: Props) {
 
   const roleLabels: Record<string, string> = {
     admin: 'Admin',
-    owner: 'Owner',
-    user: 'User',
+    owner: 'Pemilik',
+    user: 'Pengguna',
   };
 
   const verificationLabels: Record<string, string> = {
-    unverified: 'Unverified',
-    pending: 'Pending',
-    verified: 'Verified',
+    unverified: 'Belum Diverifikasi',
+    pending: 'Menunggu',
+    verified: 'Terverifikasi',
   };
 
   const verificationColors: Record<string, string> = {
@@ -64,15 +64,15 @@ export default function UserShow({ user, idCardUrl }: Props) {
 
   return (
     <AppLayout>
-      <Head title={`User Details: ${user.name}`} />
+      <Head title={`Detail Pengguna: ${user.name}`} />
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
           <Link href={route('admin.users.index')}>
             <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Users
+              <ArrowLeft className="h-4 w-4 mr-2" /> Kembali ke Daftar Pengguna
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">User Details: {user.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Detail Pengguna: {user.name}</h1>
         </div>
 
         <div className="max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -99,16 +99,16 @@ export default function UserShow({ user, idCardUrl }: Props) {
               <div className="mt-6 border-t pt-4">
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Account Created</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Akun Dibuat</p>
                     <p className="text-sm text-gray-900 dark:text-gray-300">
-                      {new Date(user.created_at).toLocaleDateString()} at {new Date(user.created_at).toLocaleTimeString()}
+                      {new Date(user.created_at).toLocaleDateString()} pada {new Date(user.created_at).toLocaleTimeString()}
                     </p>
                   </div>
 
                   <div className="flex justify-end mt-6">
                     <Link href={route('admin.users.edit', user.id)}>
                       <Button>
-                        Edit User
+                        Edit Pengguna
                       </Button>
                     </Link>
                   </div>
@@ -121,18 +121,18 @@ export default function UserShow({ user, idCardUrl }: Props) {
             {/* Verification Document Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
               <div className="border-b px-6 py-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Identity Verification</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Verifikasi Identitas</h3>
               </div>
               <div className="p-6">
                 {idCardUrl ? (
                   <div className="mb-6">
                     <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      ID Card Document
+                      Dokumen Kartu Identitas
                     </Label>
                     <div className="border rounded-lg p-4">
                       {idCardUrl.toLowerCase().endsWith('.pdf') ? (
                         <div className="flex flex-col items-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">PDF Document</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Dokumen PDF</p>
                           <a 
                             href={idCardUrl} 
                             target="_blank" 
@@ -140,7 +140,7 @@ export default function UserShow({ user, idCardUrl }: Props) {
                             className="text-blue-600 hover:underline flex items-center"
                           >
                             <Button>
-                              View PDF Document
+                              Lihat Dokumen PDF
                             </Button>
                           </a>
                         </div>
@@ -148,7 +148,7 @@ export default function UserShow({ user, idCardUrl }: Props) {
                         <div>
                           <img 
                             src={idCardUrl} 
-                            alt="ID Card" 
+                            alt="Kartu Identitas" 
                             className="max-w-full h-auto mx-auto rounded-lg border"
                             style={{ maxHeight: '400px' }} 
                           />
@@ -158,14 +158,14 @@ export default function UserShow({ user, idCardUrl }: Props) {
                   </div>
                 ) : (
                   <div className="mb-6 text-center py-8 px-4 border rounded-lg">
-                    <p className="text-gray-500 dark:text-gray-400">No identity document uploaded</p>
+                    <p className="text-gray-500 dark:text-gray-400">Tidak ada dokumen identitas yang diunggah</p>
                   </div>
                 )}
 
                 <form onSubmit={submitVerification} className="space-y-4">
                   <div>
                     <Label htmlFor="verification_status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Verification Status
+                      Status Verifikasi
                     </Label>
                     <Select
                       id="verification_status"
@@ -174,16 +174,16 @@ export default function UserShow({ user, idCardUrl }: Props) {
                       className="mt-1 block w-full"
                       error={errors.verification_status}
                     >
-                      <option value="unverified">Unverified</option>
-                      <option value="pending">Pending</option>
-                      <option value="verified">Verified</option>
+                      <option value="unverified">Belum Diverifikasi</option>
+                      <option value="pending">Menunggu</option>
+                      <option value="verified">Terverifikasi</option>
                     </Select>
                     {errors.verification_status && <div className="text-red-500 mt-1 text-sm">{errors.verification_status}</div>}
                   </div>
 
                   <div>
                     <Label htmlFor="verification_notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Verification Notes
+                      Catatan Verifikasi
                     </Label>
                     <Textarea
                       id="verification_notes"
@@ -191,7 +191,7 @@ export default function UserShow({ user, idCardUrl }: Props) {
                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setData('verification_notes', e.target.value)}
                       className="mt-1 block w-full"
                       rows={4}
-                      placeholder="Add notes about verification process or requirements"
+                      placeholder="Tambahkan catatan tentang proses verifikasi atau persyaratan"
                       error={errors.verification_notes}
                     />
                     {errors.verification_notes && <div className="text-red-500 mt-1 text-sm">{errors.verification_notes}</div>}
@@ -199,7 +199,7 @@ export default function UserShow({ user, idCardUrl }: Props) {
 
                   <div className="flex justify-end">
                     <Button type="submit" disabled={processing}>
-                      <Check className="h-4 w-4 mr-2" /> Update Verification
+                      <Check className="h-4 w-4 mr-2" /> Perbarui Verifikasi
                     </Button>
                   </div>
                 </form>

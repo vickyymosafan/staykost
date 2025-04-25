@@ -43,15 +43,15 @@ export default function UserCreate() {
 
   return (
     <AppLayout>
-      <Head title="Create User" />
+      <Head title="Tambah Pengguna Baru" />
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
           <Link href={route('admin.users.index')}>
             <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Users
+              <ArrowLeft className="h-4 w-4 mr-2" /> Kembali ke Daftar Pengguna
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Create New User</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Tambah Pengguna Baru</h1>
         </div>
 
         <div className="max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -59,7 +59,7 @@ export default function UserCreate() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Name
+                  Nama
                 </Label>
                 <Input
                   id="name"
@@ -91,7 +91,7 @@ export default function UserCreate() {
 
               <div>
                 <Label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
+                  Kata Sandi
                 </Label>
                 <Input
                   id="password"
@@ -107,7 +107,7 @@ export default function UserCreate() {
 
               <div>
                 <Label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Confirm Password
+                  Konfirmasi Kata Sandi
                 </Label>
                 <Input
                   id="password_confirmation"
@@ -121,7 +121,7 @@ export default function UserCreate() {
 
               <div>
                 <Label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Role
+                  Peran
                 </Label>
                 <Select
                   id="role"
@@ -132,15 +132,15 @@ export default function UserCreate() {
                   error={errors.role}
                 >
                   <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
-                  <option value="user">User</option>
+                  <option value="owner">Pemilik</option>
+                  <option value="user">Pengguna</option>
                 </Select>
                 {errors.role && <div className="text-red-500 mt-1 text-sm">{errors.role}</div>}
               </div>
 
               <div>
                 <Label htmlFor="verification_status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Verification Status
+                  Status Verifikasi
                 </Label>
                 <Select
                   id="verification_status"
@@ -149,16 +149,16 @@ export default function UserCreate() {
                   className="mt-1 block w-full"
                   error={errors.verification_status}
                 >
-                  <option value="unverified">Unverified</option>
-                  <option value="pending">Pending</option>
-                  <option value="verified">Verified</option>
+                  <option value="unverified">Belum Diverifikasi</option>
+                  <option value="pending">Menunggu</option>
+                  <option value="verified">Terverifikasi</option>
                 </Select>
                 {errors.verification_status && <div className="text-red-500 mt-1 text-sm">{errors.verification_status}</div>}
               </div>
 
               <div>
                 <Label htmlFor="id_card" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  ID Card (KTP/Passport)
+                  Kartu Identitas (KTP/Passport)
                 </Label>
                 <Input
                   id="id_card"
@@ -171,13 +171,13 @@ export default function UserCreate() {
                   error={errors.id_card}
                   accept="image/jpeg,image/png,application/pdf"
                 />
-                <p className="text-xs text-gray-500 mt-1">Upload image (JPG, PNG) or PDF document</p>
+                <p className="text-xs text-gray-500 mt-1">Unggah gambar (JPG, PNG) atau dokumen PDF</p>
                 {errors.id_card && <div className="text-red-500 mt-1 text-sm">{errors.id_card}</div>}
               </div>
 
               <div>
                 <Label htmlFor="verification_notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Verification Notes
+                  Catatan Verifikasi
                 </Label>
                 <Textarea
                   id="verification_notes"
@@ -194,11 +194,11 @@ export default function UserCreate() {
             <div className="flex items-center justify-end gap-4">
               <Link href={route('admin.users.index')}>
                 <Button type="button" variant="outline">
-                  Cancel
+                  Batal
                 </Button>
               </Link>
               <Button type="submit" disabled={processing}>
-                Create User
+                Tambah Pengguna
               </Button>
             </div>
           </form>
