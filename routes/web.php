@@ -36,29 +36,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/kyc/{user}/reject', [KycVerificationController::class, 'reject'])->name('kyc.reject');
         
         // Category Management Routes
-        Route::resource('categories', CategoryController::class);
+        Route::get('categories', function () {
+            return Inertia::render('admin/categories/index');
+        })->name('categories.index');
+        Route::resource('categories', CategoryController::class)->except(['index']);
         
         // Property Management Routes
-        Route::resource('properties', PropertyController::class);
+        Route::get('properties', function () {
+            return Inertia::render('admin/properties/index');
+        })->name('properties.index');
+        Route::resource('properties', PropertyController::class)->except(['index']);
         Route::put('properties/{property}/approve', [PropertyController::class, 'approve'])->name('properties.approve');
         Route::get('properties/{property}/reject', [PropertyController::class, 'showRejectForm'])->name('properties.reject-form');
         Route::put('properties/{property}/reject', [PropertyController::class, 'reject'])->name('properties.reject');
         
         // Facility Management Routes
-        Route::resource('facilities', FacilityController::class);
+        Route::get('facilities', function () {
+            return Inertia::render('admin/facilities/index');
+        })->name('facilities.index');
+        Route::resource('facilities', FacilityController::class)->except(['index']);
         
         // Content Moderation Routes
-        Route::get('content-moderation', [ContentModerationController::class, 'index'])->name('content-moderation.index');
-        Route::get('content-moderation/{contentFlag}', [ContentModerationController::class, 'show'])->name('content-moderation.show');
-        Route::put('content-moderation/{contentFlag}/review', [ContentModerationController::class, 'review'])->name('content-moderation.review');
-        
-        // Forbidden Keywords Routes
-        Route::get('content-moderation/keywords', [ContentModerationController::class, 'forbiddenKeywords'])->name('content-moderation.keywords');
-        Route::get('content-moderation/keywords/create', [ContentModerationController::class, 'createKeyword'])->name('content-moderation.keywords.create');
-        Route::post('content-moderation/keywords', [ContentModerationController::class, 'storeKeyword'])->name('content-moderation.keywords.store');
-        Route::get('content-moderation/keywords/{keyword}/edit', [ContentModerationController::class, 'editKeyword'])->name('content-moderation.keywords.edit');
-        Route::put('content-moderation/keywords/{keyword}', [ContentModerationController::class, 'updateKeyword'])->name('content-moderation.keywords.update');
-        Route::delete('content-moderation/keywords/{keyword}', [ContentModerationController::class, 'destroyKeyword'])->name('content-moderation.keywords.destroy');
+        Route::prefix('content-moderation')->name('content-moderation.')->group(function () {
+            Route::get('/', function () {
+                return Inertia::render('admin/content-moderation/index');
+            })->name('index');
+            Route::get('/keywords', function () {
+                return Inertia::render('admin/content-moderation/keywords');
+            })->name('keywords');
+            
+            // REST API untuk content moderation
+            Route::get('/{contentFlag}', [ContentModerationController::class, 'show'])->name('show');
+            Route::put('/{contentFlag}/review', [ContentModerationController::class, 'review'])->name('review');
+            Route::post('/keywords', [ContentModerationController::class, 'storeKeyword'])->name('keywords.store');
+            Route::put('/keywords/{forbiddenKeyword}', [ContentModerationController::class, 'updateKeyword'])->name('keywords.update');
+            Route::delete('/keywords/{forbiddenKeyword}', [ContentModerationController::class, 'destroyKeyword'])->name('keywords.destroy');
+        });
     });
 });
 
