@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/form-select';
 import { ArrowLeft } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, FormEvent } from 'react';
 
 type UserRole = 'admin' | 'owner' | 'user';
 type VerificationStatus = 'unverified' | 'pending' | 'verified';
@@ -41,7 +41,7 @@ type UserFormData = {
 };
 
 export default function UserEdit({ user }: Props) {
-  const { data, setData, errors, put, processing } = useForm<UserFormData>({
+  const { data, setData, errors, post, processing, reset } = useForm<UserFormData>({
     name: user.name || '',
     email: user.email || '',
     password: '',
@@ -54,9 +54,20 @@ export default function UserEdit({ user }: Props) {
     _method: 'PUT',
   });
 
-  function submit(e: React.FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
-    put(route('admin.users.update', user.id));
+    post(route('admin.users.update', user.id), {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        // Clear the password fields after successful submission
+        setData(data => ({
+          ...data, 
+          password: '',
+          password_confirmation: ''
+        }));
+      },
+    });
   }
 
   return (
