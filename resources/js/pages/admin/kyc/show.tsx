@@ -6,9 +6,22 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
-export default function KycShow({ user, idCardUrl }) {
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: 'admin' | 'owner' | 'user';
+    verification_status: 'unverified' | 'pending' | 'verified';
+    verification_notes: string | null;
+}
+
+interface Props {
+    user: User;
+    idCardUrl: string | null;
+}
+
+export default function KycShow({ user, idCardUrl }: Props) {
     const [notes, setNotes] = useState(user.verification_notes || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,11 +32,11 @@ export default function KycShow({ user, idCardUrl }) {
             { verification_notes: notes },
             {
                 onSuccess: () => {
-                    toast.success('Verifikasi dokumen berhasil disetujui');
+                    alert('Verifikasi dokumen berhasil disetujui');
                     setIsSubmitting(false);
                 },
                 onError: () => {
-                    toast.error('Terjadi kesalahan saat memproses permintaan');
+                    alert('Terjadi kesalahan saat memproses permintaan');
                     setIsSubmitting(false);
                 },
             }
@@ -32,7 +45,7 @@ export default function KycShow({ user, idCardUrl }) {
 
     const handleReject = () => {
         if (!notes.trim()) {
-            toast.error('Harap berikan alasan penolakan');
+            alert('Harap berikan alasan penolakan');
             return;
         }
 
@@ -42,11 +55,11 @@ export default function KycShow({ user, idCardUrl }) {
             { verification_notes: notes },
             {
                 onSuccess: () => {
-                    toast.success('Verifikasi dokumen ditolak');
+                    alert('Verifikasi dokumen ditolak');
                     setIsSubmitting(false);
                 },
                 onError: () => {
-                    toast.error('Terjadi kesalahan saat memproses permintaan');
+                    alert('Terjadi kesalahan saat memproses permintaan');
                     setIsSubmitting(false);
                 },
             }
@@ -93,9 +106,9 @@ export default function KycShow({ user, idCardUrl }) {
                                 <Badge
                                     variant={
                                         user.verification_status === 'verified'
-                                            ? 'success'
+                                            ? 'default'
                                             : user.verification_status === 'pending'
-                                            ? 'warning'
+                                            ? 'secondary'
                                             : 'destructive'
                                     }
                                 >
