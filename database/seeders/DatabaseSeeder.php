@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Database\Seeders\AdminSeeder;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\FacilitySeeder;
+use Database\Seeders\ForbiddenKeywordSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -23,6 +26,9 @@ class DatabaseSeeder extends Seeder
         
         $this->call([
             AdminSeeder::class,
+            CategorySeeder::class,
+            FacilitySeeder::class,
+            ForbiddenKeywordSeeder::class,
         ]);
     }
 }
