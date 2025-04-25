@@ -36,34 +36,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/kyc/{user}/reject', [KycVerificationController::class, 'reject'])->name('kyc.reject');
         
         // Category Management Routes
-        Route::get('categories', function () {
-            return Inertia::render('admin/categories/index');
-        })->name('categories.index');
+        Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::resource('categories', CategoryController::class)->except(['index']);
         
         // Property Management Routes
-        Route::get('properties', function () {
-            return Inertia::render('admin/properties/index');
-        })->name('properties.index');
+        Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
         Route::resource('properties', PropertyController::class)->except(['index']);
         Route::put('properties/{property}/approve', [PropertyController::class, 'approve'])->name('properties.approve');
         Route::get('properties/{property}/reject', [PropertyController::class, 'showRejectForm'])->name('properties.reject-form');
         Route::put('properties/{property}/reject', [PropertyController::class, 'reject'])->name('properties.reject');
         
         // Facility Management Routes
-        Route::get('facilities', function () {
-            return Inertia::render('admin/facilities/index');
-        })->name('facilities.index');
+        Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index');
         Route::resource('facilities', FacilityController::class)->except(['index']);
         
         // Content Moderation Routes
         Route::prefix('content-moderation')->name('content-moderation.')->group(function () {
-            Route::get('/', function () {
-                return Inertia::render('admin/content-moderation/index');
-            })->name('index');
-            Route::get('/keywords', function () {
-                return Inertia::render('admin/content-moderation/keywords');
-            })->name('keywords');
+            Route::get('/', [ContentModerationController::class, 'index'])->name('index');
+            Route::get('/keywords', [ContentModerationController::class, 'forbiddenKeywords'])->name('keywords');
             
             // REST API untuk content moderation
             Route::get('/{contentFlag}', [ContentModerationController::class, 'show'])->name('show');

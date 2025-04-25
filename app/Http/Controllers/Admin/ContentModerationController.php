@@ -7,6 +7,8 @@ use App\Models\ContentFlag;
 use App\Models\ForbiddenKeyword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ContentModerationController extends Controller
 {
@@ -27,51 +29,44 @@ class ContentModerationController extends Controller
             ->latest()
             ->paginate(10);
         
-        return view('admin.content-moderation.index', compact('contentFlags', 'status'));
+        return Inertia::render('admin/content-moderation/index', [
+            'contentFlags' => $contentFlags,
+            'filters' => [
+                'status' => $status
+            ]
+        ]);
     }
     
     /**
-     * Display a specific flagged content
+     * Display details of a specific flagged content
      */
-    public function show($id)
+    public function show(ContentFlag $contentFlag)
     {
-        $contentFlag = ContentFlag::with(['flaggable', 'reporter', 'reviewer'])->findOrFail($id);
+        $contentFlag->load(['flaggable', 'reporter', 'reviewer']);
         
-        return view('admin.content-moderation.show', compact('contentFlag'));
+        return Inertia::render('admin/content-moderation/show', [
+            'contentFlag' => $contentFlag
+        ]);
     }
     
     /**
-     * Review a flagged content
+     * Mark flagged content as reviewed
      */
-    public function review(Request $request, $id)
+    public function review(Request $request, ContentFlag $contentFlag)
     {
-        $contentFlag = ContentFlag::findOrFail($id);
-        
         $validated = $request->validate([
             'status' => 'required|in:reviewed,rejected,actioned',
-            'admin_notes' => 'nullable|string|max:500',
+            'notes' => 'nullable|string|max:1000'
         ]);
         
         $contentFlag->status = $validated['status'];
-        $contentFlag->admin_notes = $validated['admin_notes'];
-        $contentFlag->reviewed_by = Auth::id();
+        $contentFlag->reviewer_id = Auth::id();
         $contentFlag->reviewed_at = now();
+        $contentFlag->review_notes = $validated['notes'] ?? null;
         $contentFlag->save();
         
-        // If actioned, we might want to hide/remove the content
-        if ($validated['status'] === 'actioned' && $contentFlag->flaggable) {
-            // Different actions based on flaggable type
-            // For example, if it's a property, we might want to change its status
-            if ($contentFlag->flaggable_type === 'App\\Models\\Property') {
-                $contentFlag->flaggable->update([
-                    'status' => 'rejected',
-                    'rejection_reason' => 'Inappropriate content. Please revise and resubmit.',
-                ]);
-            }
-        }
-        
         return redirect()->route('admin.content-moderation.index')
-            ->with('success', 'Content flag has been reviewed');
+            ->with('success', 'Content review status updated successfully');
     }
     
     /**
@@ -79,23 +74,12 @@ class ContentModerationController extends Controller
      */
     public function forbiddenKeywords()
     {
-        $keywords = ForbiddenKeyword::orderBy('keyword')->paginate(20);
+        $keywords = ForbiddenKeyword::orderBy('keyword')
+            ->paginate(15);
         
-        return view('admin.content-moderation.keywords.index', compact('keywords'));
-    }
-    
-    /**
-     * Show the form for creating a new keyword
-     */
-    public function createKeyword()
-    {
-        $severityLevels = [
-            'low' => 'Low',
-            'medium' => 'Medium',
-            'high' => 'High',
-        ];
-        
-        return view('admin.content-moderation.keywords.create', compact('severityLevels'));
+        return Inertia::render('admin/content-moderation/keywords', [
+            'keywords' => $keywords
+        ]);
     }
     
     /**
@@ -104,13 +88,13 @@ class ContentModerationController extends Controller
     public function storeKeyword(Request $request)
     {
         $validated = $request->validate([
-            'keyword' => 'required|string|max:255|unique:forbidden_keywords,keyword',
-            'replacement' => 'nullable|string|max:255',
+            'keyword' => 'required|string|max:100|unique:forbidden_keywords,keyword',
             'severity' => 'required|in:low,medium,high',
-            'is_active' => 'boolean',
+            'replacement' => 'nullable|string|max:100',
+            'is_active' => 'boolean'
         ]);
         
-        $validated['is_active'] = $request->has('is_active');
+        $validated['is_active'] = $validated['is_active'] ?? true;
         
         ForbiddenKeyword::create($validated);
         
@@ -119,38 +103,18 @@ class ContentModerationController extends Controller
     }
     
     /**
-     * Show the form for editing a keyword
+     * Update an existing forbidden keyword
      */
-    public function editKeyword($id)
+    public function updateKeyword(Request $request, ForbiddenKeyword $forbiddenKeyword)
     {
-        $keyword = ForbiddenKeyword::findOrFail($id);
-        
-        $severityLevels = [
-            'low' => 'Low',
-            'medium' => 'Medium',
-            'high' => 'High',
-        ];
-        
-        return view('admin.content-moderation.keywords.edit', compact('keyword', 'severityLevels'));
-    }
-    
-    /**
-     * Update a forbidden keyword
-     */
-    public function updateKeyword(Request $request, $id)
-    {
-        $keyword = ForbiddenKeyword::findOrFail($id);
-        
         $validated = $request->validate([
-            'keyword' => 'required|string|max:255|unique:forbidden_keywords,keyword,'.$id,
-            'replacement' => 'nullable|string|max:255',
+            'keyword' => ['required', 'string', 'max:100', Rule::unique('forbidden_keywords')->ignore($forbiddenKeyword)],
             'severity' => 'required|in:low,medium,high',
-            'is_active' => 'boolean',
+            'replacement' => 'nullable|string|max:100',
+            'is_active' => 'boolean'
         ]);
         
-        $validated['is_active'] = $request->has('is_active');
-        
-        $keyword->update($validated);
+        $forbiddenKeyword->update($validated);
         
         return redirect()->route('admin.content-moderation.keywords')
             ->with('success', 'Forbidden keyword updated successfully');
@@ -159,10 +123,9 @@ class ContentModerationController extends Controller
     /**
      * Delete a forbidden keyword
      */
-    public function destroyKeyword($id)
+    public function destroyKeyword(ForbiddenKeyword $forbiddenKeyword)
     {
-        $keyword = ForbiddenKeyword::findOrFail($id);
-        $keyword->delete();
+        $forbiddenKeyword->delete();
         
         return redirect()->route('admin.content-moderation.keywords')
             ->with('success', 'Forbidden keyword deleted successfully');

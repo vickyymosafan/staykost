@@ -7,6 +7,7 @@ import { Building, CheckCircle, XCircle, Clock, Eye, Edit, Trash } from 'lucide-
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useEffect, useState } from 'react';
 
 interface Property {
   id: number;
@@ -20,15 +21,14 @@ interface Property {
     name: string;
     email: string;
   };
-  price: string;
+  price: number;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }
 
 interface PropertiesIndexProps {
-  properties: {
+  properties?: {
     data: Property[];
-    links: any;
     meta: {
       current_page: number;
       from: number;
@@ -39,12 +39,14 @@ interface PropertiesIndexProps {
       total: number;
     };
   };
-  filters: {
+  filters?: {
     status: string;
   };
 }
 
 export default function PropertiesIndex({ properties, filters }: PropertiesIndexProps) {
+  const [activeStatus, setActiveStatus] = useState(filters?.status || 'all');
+  
   const statuses = {
     all: 'Semua',
     pending: 'Menunggu',
@@ -66,6 +68,7 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
   };
 
   const handleStatusChange = (status: string) => {
+    setActiveStatus(status);
     router.get(route('admin.properties.index'), { status }, {
       preserveState: true,
       replace: true,
@@ -74,25 +77,24 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
 
   return (
     <AppLayout>
-      <Head title="Kelola Properti" />
-      <div className="flex h-full flex-1 flex-col gap-4 p-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Kelola Properti</h1>
-            <p className="text-muted-foreground">Manajemen dan moderasi properti kost</p>
-          </div>
+      <Head title="Properti" />
+      
+      <div className="container py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Manajemen Properti</h1>
         </div>
-
+        
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <CardTitle>Daftar Properti</CardTitle>
-                <CardDescription>Properti yang terdaftar dalam sistem</CardDescription>
+                <CardDescription>Kelola dan validasi listing properti</CardDescription>
               </div>
-              <div className="flex items-center gap-3">
-                <Select defaultValue={filters.status} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="w-[180px]">
+              
+              <div className="w-full sm:w-72">
+                <Select value={activeStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
                     <SelectValue placeholder="Filter Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -105,6 +107,7 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
               </div>
             </div>
           </CardHeader>
+          
           <CardContent>
             <Table>
               <TableHeader>
@@ -117,17 +120,9 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
+              
               <TableBody>
-                {properties.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center">
-                        <Building className="h-10 w-10 mb-2 text-muted-foreground/50" />
-                        <p>Tidak ada properti ditemukan</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                {properties && properties.data && properties.data.length > 0 ? (
                   properties.data.map((property) => (
                     <TableRow key={property.id}>
                       <TableCell className="font-medium">{property.name}</TableCell>
@@ -139,46 +134,68 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="icon" asChild>
                             <Link href={route('admin.properties.show', property.id)}>
+                              <span className="sr-only">View</span>
                               <Eye className="h-4 w-4" />
                             </Link>
                           </Button>
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link href={route('admin.properties.edit', property.id)}>
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                          </Button>
+                          
                           {property.status === 'pending' && (
-                            <Button variant="ghost" size="icon" className="text-green-600" asChild>
-                              <Link href={route('admin.properties.approve', property.id)} method="put" as="button">
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-green-600"
+                                onClick={() => {
+                                  if (confirm('Apakah Anda yakin ingin menyetujui properti ini?')) {
+                                    router.put(route('admin.properties.approve', property.id));
+                                  }
+                                }}
+                              >
+                                <span className="sr-only">Approve</span>
                                 <CheckCircle className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          )}
-                          {property.status === 'pending' && (
-                            <Button variant="ghost" size="icon" className="text-red-600" asChild>
-                              <Link href={route('admin.properties.reject-form', property.id)}>
-                                <XCircle className="h-4 w-4" />
-                              </Link>
-                            </Button>
+                              </Button>
+                              
+                              <Button variant="ghost" size="icon" className="text-red-600" asChild>
+                                <Link href={route('admin.properties.reject-form', property.id)}>
+                                  <span className="sr-only">Reject</span>
+                                  <XCircle className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center">
+                        <Building className="h-10 w-10 mb-2 text-muted-foreground/50" />
+                        <p>
+                          {activeStatus === 'all'
+                            ? 'Tidak ada properti ditemukan'
+                            : `Tidak ada properti dengan status "${statuses[activeStatus as keyof typeof statuses]}" ditemukan`}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
 
-            <div className="mt-6">
-              <Pagination
-                current_page={properties.meta.current_page}
-                last_page={properties.meta.last_page}
-                from={properties.meta.from}
-                to={properties.meta.to}
-                total={properties.meta.total}
-                path={properties.meta.path}
-              />
-            </div>
+            {properties && properties.meta && (
+              <div className="mt-6">
+                <Pagination
+                  current_page={properties.meta.current_page}
+                  last_page={properties.meta.last_page}
+                  from={properties.meta.from}
+                  to={properties.meta.to}
+                  total={properties.meta.total}
+                  path={properties.meta.path}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

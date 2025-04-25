@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Facility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class FacilityController extends Controller
 {
@@ -15,16 +16,27 @@ class FacilityController extends Controller
      */
     public function index(Request $request)
     {
+        $categoryId = $request->get('category_id');
+        
         $facilities = Facility::with('category')
-            ->when($request->has('category_id'), function($query) use($request) {
-                return $query->where('category_id', $request->category_id);
+            ->when($categoryId, function($query) use($categoryId) {
+                return $query->where('category_id', $categoryId);
             })
             ->orderBy('name')
             ->paginate(10);
         
-        $categories = Category::where('type', 'facility_type')->where('is_active', true)->get();
+        $categories = Category::where('type', 'facility_type')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
         
-        return view('admin.facilities.index', compact('facilities', 'categories'));
+        return Inertia::render('admin/facilities/index', [
+            'facilities' => $facilities,
+            'categories' => $categories,
+            'filters' => [
+                'category_id' => $categoryId
+            ]
+        ]);
     }
 
     /**
@@ -32,9 +44,14 @@ class FacilityController extends Controller
      */
     public function create()
     {
-        $categories = Category::where('type', 'facility_type')->where('is_active', true)->get();
+        $categories = Category::where('type', 'facility_type')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
         
-        return view('admin.facilities.create', compact('categories'));
+        return Inertia::render('admin/facilities/create', [
+            'categories' => $categories
+        ]);
     }
 
     /**
@@ -43,15 +60,16 @@ class FacilityController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'category_id' => 'nullable|exists:categories,id',
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:50',
             'is_active' => 'boolean',
         ]);
         
+        // Add slug and default values
         $validated['slug'] = Str::slug($validated['name']);
-        $validated['is_active'] = $request->has('is_active');
+        $validated['is_active'] = $validated['is_active'] ?? true;
         
         Facility::create($validated);
         
@@ -64,9 +82,11 @@ class FacilityController extends Controller
      */
     public function show(string $id)
     {
-        $facility = Facility::with('category', 'properties')->findOrFail($id);
+        $facility = Facility::with('category')->findOrFail($id);
         
-        return view('admin.facilities.show', compact('facility'));
+        return Inertia::render('admin/facilities/show', [
+            'facility' => $facility
+        ]);
     }
 
     /**
@@ -75,9 +95,16 @@ class FacilityController extends Controller
     public function edit(string $id)
     {
         $facility = Facility::findOrFail($id);
-        $categories = Category::where('type', 'facility_type')->where('is_active', true)->get();
         
-        return view('admin.facilities.edit', compact('facility', 'categories'));
+        $categories = Category::where('type', 'facility_type')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return Inertia::render('admin/facilities/edit', [
+            'facility' => $facility,
+            'categories' => $categories
+        ]);
     }
 
     /**
@@ -88,15 +115,17 @@ class FacilityController extends Controller
         $facility = Facility::findOrFail($id);
         
         $validated = $request->validate([
-            'category_id' => 'nullable|exists:categories,id',
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:50',
             'is_active' => 'boolean',
         ]);
         
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['is_active'] = $request->has('is_active');
+        // Update slug if name changed
+        if ($facility->name !== $validated['name']) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
         
         $facility->update($validated);
         
@@ -111,9 +140,10 @@ class FacilityController extends Controller
     {
         $facility = Facility::findOrFail($id);
         
-        // Check if facility is being used by any properties
-        if ($facility->properties()->count() > 0) {
-            return back()->with('error', 'Cannot delete facility because it is in use by properties');
+        // Check if facility is being used by properties
+        if ($facility->properties()->exists()) {
+            return redirect()->back()
+                ->with('error', 'Cannot delete facility that is in use');
         }
         
         $facility->delete();

@@ -7,6 +7,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -21,7 +22,13 @@ class CategoryController extends Controller
             ->orderBy('name')
             ->paginate(10);
             
-        return view('admin.categories.index', compact('categories', 'type'));
+        return Inertia::render('admin/categories/index', [
+            'categories' => $categories,
+            'type' => $type,
+            'filters' => [
+                'type' => $type
+            ]
+        ]);
     }
 
     /**
@@ -35,7 +42,9 @@ class CategoryController extends Controller
             'location_zone' => 'Location Zone'
         ];
         
-        return view('admin.categories.create', compact('types'));
+        return Inertia::render('admin/categories/create', [
+            'types' => $types
+        ]);
     }
 
     /**
@@ -50,8 +59,11 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
         ]);
         
+        // Add slug
         $validated['slug'] = Str::slug($validated['name']);
-        $validated['is_active'] = $request->has('is_active');
+        
+        // Set default for is_active if not provided
+        $validated['is_active'] = $validated['is_active'] ?? true;
         
         Category::create($validated);
         
@@ -62,35 +74,35 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Category $category)
     {
-        $category = Category::findOrFail($id);
-        return view('admin.categories.show', compact('category'));
+        return Inertia::render('admin/categories/show', [
+            'category' => $category
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Category $category)
     {
-        $category = Category::findOrFail($id);
-        
         $types = [
             'room_type' => 'Room Type',
             'facility_type' => 'Facility Type',
             'location_zone' => 'Location Zone'
         ];
         
-        return view('admin.categories.edit', compact('category', 'types'));
+        return Inertia::render('admin/categories/edit', [
+            'category' => $category,
+            'types' => $types
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Category $category)
     {
-        $category = Category::findOrFail($id);
-        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:room_type,facility_type,location_zone',
@@ -98,28 +110,29 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
         ]);
         
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['is_active'] = $request->has('is_active');
+        // Update slug only if name changed
+        if ($category->name !== $validated['name']) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
         
         $category->update($validated);
         
-        return redirect()->route('admin.categories.index', ['type' => $validated['type']])
+        return redirect()->route('admin.categories.index', ['type' => $category->type])
             ->with('success', 'Category updated successfully');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Category $category)
     {
-        $category = Category::findOrFail($id);
-        $type = $category->type;
-        
-        // Check if category is being used
-        if ($category->properties()->count() > 0 || $category->facilities()->count() > 0) {
-            return back()->with('error', 'Cannot delete category because it is in use');
+        // Check if category is in use
+        if ($category->facilities()->exists() || $category->properties()->exists()) {
+            return redirect()->back()
+                ->with('error', 'Cannot delete category that is in use.');
         }
         
+        $type = $category->type;
         $category->delete();
         
         return redirect()->route('admin.categories.index', ['type' => $type])

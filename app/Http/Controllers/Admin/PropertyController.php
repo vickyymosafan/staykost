@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class PropertyController extends Controller
 {
@@ -15,22 +16,26 @@ class PropertyController extends Controller
      */
     public function index(Request $request)
     {
-        $status = $request->get('status', 'pending');
+        $status = $request->get('status', 'all');
         
-        $properties = Property::with(['owner', 'category'])
-            ->when($status === 'pending', function($query) {
-                return $query->pending();
-            })
-            ->when($status === 'approved', function($query) {
-                return $query->approved();
-            })
-            ->when($status === 'rejected', function($query) {
-                return $query->rejected();
-            })
-            ->latest()
-            ->paginate(10);
+        $query = Property::with(['owner', 'category']);
         
-        return view('admin.properties.index', compact('properties', 'status'));
+        if ($status === 'pending') {
+            $query->where('status', 'pending');
+        } elseif ($status === 'approved') {
+            $query->where('status', 'approved');
+        } elseif ($status === 'rejected') {
+            $query->where('status', 'rejected');
+        }
+        
+        $properties = $query->latest()->paginate(10);
+        
+        return Inertia::render('admin/properties/index', [
+            'properties' => $properties,
+            'filters' => [
+                'status' => $status
+            ]
+        ]);
     }
 
     /**
@@ -54,116 +59,102 @@ class PropertyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Property $property)
     {
-        $property = Property::with(['owner', 'category', 'facilities', 'contentFlags'])
-            ->findOrFail($id);
+        $property->load(['owner', 'category', 'facilities']);
         
-        return view('admin.properties.show', compact('property'));
+        return Inertia::render('admin/properties/show', [
+            'property' => $property
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Property $property)
     {
-        $property = Property::findOrFail($id);
-        $categories = Category::where('type', 'room_type')->where('is_active', true)->get();
-        
-        return view('admin.properties.edit', compact('property', 'categories'));
+        // Admin doesn't edit properties directly
+        return redirect()->route('admin.properties.index');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Property $property)
     {
-        $property = Property::findOrFail($id);
-        
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'deposit_amount' => 'nullable|numeric|min:0',
-            'address' => 'required|string',
-            'city' => 'required|string',
-            'state' => 'nullable|string',
-            'zip_code' => 'nullable|string',
-            'capacity' => 'required|integer|min:1',
-            'is_available' => 'boolean',
-        ]);
-        
-        $validated['is_available'] = $request->has('is_available');
-        
-        $property->update($validated);
-        
-        return redirect()->route('admin.properties.show', $property->id)
-            ->with('success', 'Property updated successfully');
+        // Admin doesn't update properties directly
+        return redirect()->route('admin.properties.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Property $property)
     {
-        $property = Property::findOrFail($id);
-        
-        // Soft delete the property
-        $property->delete();
-        
+        // For now, let's not allow admins to delete properties
         return redirect()->route('admin.properties.index')
-            ->with('success', 'Property deleted successfully');
+            ->with('error', 'Deleting properties is not allowed');
     }
     
     /**
      * Approve a property listing
      */
-    public function approve(string $id)
+    public function approve(Property $property)
     {
-        $property = Property::findOrFail($id);
+        if ($property->status !== 'pending') {
+            return redirect()->route('admin.properties.index')
+                ->with('error', 'Only pending properties can be approved');
+        }
         
         $property->status = 'approved';
         $property->approved_at = now();
-        $property->rejected_at = null;
-        $property->rejection_reason = null;
+        $property->approved_by = Auth::id();
         $property->save();
         
-        // TODO: Send notification to the property owner
+        // TODO: Send notification to owner
         
-        return redirect()->route('admin.properties.show', $property->id)
-            ->with('success', 'Property listing has been approved');
+        return redirect()->route('admin.properties.index')
+            ->with('success', 'Property approved successfully');
     }
     
     /**
      * Show the rejection form
      */
-    public function showRejectForm(string $id)
+    public function showRejectForm(Property $property)
     {
-        $property = Property::findOrFail($id);
-        return view('admin.properties.reject', compact('property'));
+        if ($property->status !== 'pending') {
+            return redirect()->route('admin.properties.index')
+                ->with('error', 'Only pending properties can be rejected');
+        }
+        
+        return Inertia::render('admin/properties/reject', [
+            'property' => $property
+        ]);
     }
     
     /**
      * Reject a property listing
      */
-    public function reject(Request $request, string $id)
+    public function reject(Request $request, Property $property)
     {
-        $property = Property::findOrFail($id);
+        if ($property->status !== 'pending') {
+            return redirect()->route('admin.properties.index')
+                ->with('error', 'Only pending properties can be rejected');
+        }
         
         $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:500',
+            'rejection_reason' => 'required|string|max:1000'
         ]);
         
         $property->status = 'rejected';
-        $property->rejection_reason = $validated['rejection_reason'];
         $property->rejected_at = now();
-        $property->approved_at = null;
+        $property->rejected_by = Auth::id();
+        $property->rejection_reason = $validated['rejection_reason'];
         $property->save();
         
-        // TODO: Send notification to the property owner
+        // TODO: Send notification to owner
         
-        return redirect()->route('admin.properties.show', $property->id)
-            ->with('success', 'Property listing has been rejected');
+        return redirect()->route('admin.properties.index')
+            ->with('success', 'Property rejected successfully');
     }
 }
