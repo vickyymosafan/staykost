@@ -2,12 +2,13 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Refrigerator, PlusCircle, Edit, Trash, CheckCircle, XCircle } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+// Types
 interface Category {
   id: number;
   name: string;
@@ -23,35 +24,145 @@ interface Facility {
   category: Category | null;
 }
 
+interface PaginationMeta {
+  current_page: number;
+  from: number;
+  last_page: number;
+  path: string;
+  per_page: number;
+  to: number;
+  total: number;
+}
+
 interface FacilitiesIndexProps {
   facilities: {
     data: Facility[];
     links: any;
-    meta: {
-      current_page: number;
-      from: number;
-      last_page: number;
-      path: string;
-      per_page: number;
-      to: number;
-      total: number;
-    };
+    meta: PaginationMeta;
   };
   categories: Category[];
 }
 
+// Components
+const StatusBadge = ({ isActive }: { isActive: boolean }) => (
+  isActive ? (
+    <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
+      <CheckCircle className="h-3 w-3" /> Aktif
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200">
+      <XCircle className="h-3 w-3" /> Tidak Aktif
+    </Badge>
+  )
+);
+
+const FacilityIcon = ({ icon }: { icon: string | null }) => {
+  if (!icon) return <Refrigerator className="h-4 w-4" />;
+  // You can use a dynamic component based on the icon name
+  // For simplicity, we'll just show the icon name
+  return <span className="text-xs font-mono">{icon}</span>;
+};
+
+const FacilityActions = ({ facility }: { facility: Facility }) => (
+  <div className="flex items-center justify-end gap-2">
+    <Button variant="ghost" size="icon" asChild>
+      <Link href={route('admin.facilities.edit', facility.id)}>
+        <Edit className="h-4 w-4" />
+      </Link>
+    </Button>
+    <Button variant="ghost" size="icon" className="text-red-600" asChild>
+      <Link 
+        href={route('admin.facilities.destroy', facility.id)} 
+        method="delete" 
+        as="button"
+        data={{ _confirm: 'Apakah Anda yakin ingin menghapus fasilitas ini?' }}
+      >
+        <Trash className="h-4 w-4" />
+      </Link>
+    </Button>
+  </div>
+);
+
+const EmptyFacilitiesState = () => (
+  <TableRow>
+    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center">
+        <Refrigerator className="h-10 w-10 mb-2 text-muted-foreground/50" />
+        <p>Tidak ada fasilitas ditemukan</p>
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+const CategoryFilter = ({ categories, onChange }: { categories: Category[], onChange: (value: string) => void }) => (
+  <Select onValueChange={onChange}>
+    <SelectTrigger className="w-[200px]">
+      <SelectValue placeholder="Filter Kategori" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="">Semua Kategori</SelectItem>
+      {categories.map((category) => (
+        <SelectItem key={category.id} value={category.id.toString()}>
+          {category.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
+
+const FacilitiesTable = ({ facilities }: { facilities: { data: Facility[], meta: PaginationMeta } }) => (
+  <>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nama</TableHead>
+          <TableHead>Kategori</TableHead>
+          <TableHead>Deskripsi</TableHead>
+          <TableHead>Icon</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Aksi</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {facilities.data.length === 0 ? (
+          <EmptyFacilitiesState />
+        ) : (
+          facilities.data.map((facility) => (
+            <TableRow key={facility.id}>
+              <TableCell className="font-medium">{facility.name}</TableCell>
+              <TableCell>{facility.category?.name || '-'}</TableCell>
+              <TableCell>{facility.description || '-'}</TableCell>
+              <TableCell>
+                <FacilityIcon icon={facility.icon} />
+              </TableCell>
+              <TableCell>
+                <StatusBadge isActive={facility.is_active} />
+              </TableCell>
+              <TableCell className="text-right">
+                <FacilityActions facility={facility} />
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+
+    <div className="mt-6">
+      <Pagination
+        current_page={facilities.meta.current_page}
+        last_page={facilities.meta.last_page}
+        from={facilities.meta.from}
+        to={facilities.meta.to}
+        total={facilities.meta.total}
+        path={facilities.meta.path}
+      />
+    </div>
+  </>
+);
+
 export default function FacilitiesIndex({ facilities, categories }: FacilitiesIndexProps) {
   const handleCategoryChange = (value: string) => {
     router.get(route('admin.facilities.index', { category_id: value }));
-  };
-
-  // Render facility icon
-  const renderIcon = (icon: string | null) => {
-    if (!icon) return <Refrigerator className="h-4 w-4" />;
-    
-    // You can use a dynamic component based on the icon name
-    // For simplicity, we'll just show the icon name
-    return <span className="text-xs font-mono">{icon}</span>;
   };
 
   return (
@@ -79,97 +190,15 @@ export default function FacilitiesIndex({ facilities, categories }: FacilitiesIn
                 <CardDescription>Kelola fasilitas untuk properti</CardDescription>
               </div>
               <div className="flex items-center gap-3">
-                <Select onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Filter Kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Semua Kategori</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CategoryFilter 
+                  categories={categories} 
+                  onChange={handleCategoryChange} 
+                />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead>Icon</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {facilities.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center">
-                        <Refrigerator className="h-10 w-10 mb-2 text-muted-foreground/50" />
-                        <p>Tidak ada fasilitas ditemukan</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  facilities.data.map((facility) => (
-                    <TableRow key={facility.id}>
-                      <TableCell className="font-medium">{facility.name}</TableCell>
-                      <TableCell>{facility.category?.name || '-'}</TableCell>
-                      <TableCell>{facility.description || '-'}</TableCell>
-                      <TableCell>{renderIcon(facility.icon)}</TableCell>
-                      <TableCell>
-                        {facility.is_active ? (
-                          <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
-                            <CheckCircle className="h-3 w-3" /> Aktif
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200">
-                            <XCircle className="h-3 w-3" /> Tidak Aktif
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link href={route('admin.facilities.edit', facility.id)}>
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-red-600" asChild>
-                            <Link 
-                              href={route('admin.facilities.destroy', facility.id)} 
-                              method="delete" 
-                              as="button"
-                              data={{ _confirm: 'Apakah Anda yakin ingin menghapus fasilitas ini?' }}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-
-            <div className="mt-6">
-              <Pagination
-                current_page={facilities.meta.current_page}
-                last_page={facilities.meta.last_page}
-                from={facilities.meta.from}
-                to={facilities.meta.to}
-                total={facilities.meta.total}
-                path={facilities.meta.path}
-              />
-            </div>
+            <FacilitiesTable facilities={facilities} />
           </CardContent>
         </Card>
       </div>
