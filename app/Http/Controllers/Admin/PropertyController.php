@@ -80,8 +80,7 @@ class PropertyController extends Controller
         
         // Gunakan nama file dengan case yang tepat (Create dengan C kapital)
         return Inertia::render('admin/properties/Create', [
-            'categories' => $categories,
-            'debug' => true
+            'categories' => $categories
         ]);
     }
 

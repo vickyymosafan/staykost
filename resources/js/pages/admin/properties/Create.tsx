@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,14 +17,9 @@ interface Category {
 
 interface CreatePropertyProps {
   categories?: Category[];
-  debug?: boolean;
 }
 
-export default function CreateProperty({ categories = [], debug = false }: CreatePropertyProps) {
-  // State untuk debugging
-  const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+export default function CreateProperty({ categories = [] }: CreatePropertyProps) {
   // Inisialisasi form dengan nilai default yang sesuai dengan tipe data di database
   const { data, setData, post, processing, errors } = useForm({
     name: '',
@@ -42,26 +37,10 @@ export default function CreateProperty({ categories = [], debug = false }: Creat
     user_id: '', // Untuk mengakomodasi relasi ke pemilik
   });
 
-  // Effect untuk debugging
-  useEffect(() => {
-    try {
-      setMounted(true);
-      console.log("Component mounted, categories:", categories);
-    } catch (err) {
-      console.error("Error in useEffect:", err);
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, []);
-
-  // Fungsi untuk menangani perubahan input
+  // Handler untuk input perubahan
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    try {
-      const { id, value } = e.target;
-      setData(id as any, value);
-    } catch (err) {
-      console.error("Error in handleChange:", err);
-      setError(err instanceof Error ? err.message : String(err));
-    }
+    const { id, value } = e.target;
+    setData(id as keyof typeof data, value);
   };
 
   // State terpisah untuk UI checkbox
@@ -69,89 +48,37 @@ export default function CreateProperty({ categories = [], debug = false }: Creat
 
   // Fungsi untuk menangani perubahan checkbox
   const handleAvailabilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const checked = e.target.checked;
-      setIsAvailable(checked);
-      // Set is_available sebagai 1 atau 0 untuk kompatibilitas dengan backend
-      setData('is_available', checked ? 1 : 0);
-    } catch (err) {
-      console.error("Error in handleAvailabilityChange:", err);
-      setError(err instanceof Error ? err.message : String(err));
-    }
+    const checked = e.target.checked;
+    setIsAvailable(checked);
+    // Set is_available sebagai 1 atau 0 untuk kompatibilitas dengan backend
+    setData('is_available', checked ? 1 : 0);
   };
 
+  // Handler untuk form submission
   const handleSubmit = (e: React.FormEvent) => {
-    try {
-      e.preventDefault();
-      
-      // Salin data untuk modifikasi sebelum pengiriman
-      const formData: Record<string, any> = {};
-      
-      // Copy semua field dari form data
-      Object.keys(data).forEach(key => {
-        formData[key] = data[key as keyof typeof data];
-      });
-      
-      // Konversi field kosong ke null untuk backend
-      if (formData.category_id === '') formData.category_id = null;
-      if (formData.deposit_amount === '0' || formData.deposit_amount === '') formData.deposit_amount = null;
-      if (formData.state === '') formData.state = null;
-      if (formData.zip_code === '') formData.zip_code = null;
-      if (formData.user_id === '') formData.user_id = null;
+    e.preventDefault();
+    
+    // Salin data untuk modifikasi sebelum pengiriman
+    const formData: Record<string, any> = {};
+    
+    // Copy semua field dari form data
+    Object.keys(data).forEach(key => {
+      formData[key] = data[key as keyof typeof data];
+    });
+    
+    // Konversi field kosong ke null untuk backend
+    if (formData.category_id === '') formData.category_id = null;
+    if (formData.deposit_amount === '0' || formData.deposit_amount === '') formData.deposit_amount = null;
+    if (formData.state === '') formData.state = null;
+    if (formData.zip_code === '') formData.zip_code = null;
+    if (formData.user_id === '') formData.user_id = null;
 
-      console.log("Submitting form data:", formData);
-      post(route('admin.properties.store'), formData);
-    } catch (err) {
-      console.error("Error in handleSubmit:", err);
-      setError(err instanceof Error ? err.message : String(err));
-    }
+    post(route('admin.properties.store'), formData);
   };
 
-  // Render debugging info jika ada error
-  if (error) {
-    return (
-      <AppLayout>
-        <Head title="Error - Tambah Properti" />
-        <div className="container mx-auto px-4 py-6 max-w-5xl">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-            <h3 className="text-lg font-medium text-red-700">Error saat memuat halaman</h3>
-            <p className="text-red-600">{error}</p>
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Debug Info</CardTitle>
-              <CardDescription>Informasi debugging untuk pengembang</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Mounted: {mounted ? 'Yes' : 'No'}</p>
-              <p>Categories count: {categories?.length || 0}</p>
-              <p>Debug mode: {debug ? 'On' : 'Off'}</p>
-              <pre className="bg-gray-100 p-4 rounded mt-4 overflow-auto max-h-96">
-                {JSON.stringify({data, errors, categories, debug}, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-          <div className="mt-4">
-            <Button variant="outline" asChild>
-              <a href={route('admin.properties.index')}>Kembali ke Daftar Properti</a>
-            </Button>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  // Render form normal jika tidak ada error
   return (
     <AppLayout>
       <Head title="Tambah Properti Baru" />
-      
-      {/* Debug info in development */}
-      {debug && (
-        <div className="container mx-auto px-4 py-2 max-w-5xl bg-blue-50 border-blue-200 border rounded mb-4">
-          <p className="text-sm text-blue-700">Debug mode: Categories count: {categories?.length || 0}</p>
-        </div>
-      )}
       
       <div className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
