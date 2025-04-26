@@ -30,6 +30,9 @@ class Property extends Model
         'rejection_reason',
         'approved_at',
         'rejected_at',
+        'is_featured',
+        'has_reported_content',
+        'last_modified_by',
     ];
     
     protected $casts = [
@@ -38,6 +41,8 @@ class Property extends Model
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'is_available' => 'boolean',
+        'is_featured' => 'boolean',
+        'has_reported_content' => 'boolean',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];
@@ -75,6 +80,14 @@ class Property extends Model
     }
     
     /**
+     * Get the admin user who last modified this property
+     */
+    public function modifiedBy()
+    {
+        return $this->belongsTo(User::class, 'last_modified_by');
+    }
+    
+    /**
      * Scope a query to only include pending properties
      */
     public function scopePending($query)
@@ -96,5 +109,22 @@ class Property extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', 'rejected');
+    }
+    
+    /**
+     * Scope a query to only include properties that need moderation
+     */
+    public function scopeNeedsModeration($query)
+    {
+        return $query->where('status', 'moderation')
+                    ->orWhere('has_reported_content', true);
+    }
+    
+    /**
+     * Scope a query to only include featured properties
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
     }
 }

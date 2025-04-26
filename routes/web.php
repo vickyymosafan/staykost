@@ -59,6 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('properties/{property}/approve', [PropertyController::class, 'approve'])->name('properties.approve');
         Route::get('properties/{property}/reject', [PropertyController::class, 'showRejectForm'])->name('properties.reject-form');
         Route::put('properties/{property}/reject', [PropertyController::class, 'reject'])->name('properties.reject');
+        Route::put('properties/{property}/moderate', [PropertyController::class, 'moderate'])->name('properties.moderate');
+        Route::put('properties/{property}/toggle-featured', [PropertyController::class, 'toggleFeatured'])->name('properties.toggle-featured');
         
         // Facility Management Routes
         Route::resource('facilities', FacilityController::class);

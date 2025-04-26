@@ -17,23 +17,56 @@ class PropertyController extends Controller
     public function index(Request $request)
     {
         $status = $request->get('status', 'all');
+        $search = $request->get('search', '');
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
         
         $query = Property::with(['owner', 'category']);
         
+        // Apply status filtering
         if ($status === 'pending') {
             $query->where('status', 'pending');
         } elseif ($status === 'approved') {
             $query->where('status', 'approved');
         } elseif ($status === 'rejected') {
             $query->where('status', 'rejected');
+        } elseif ($status === 'moderation') {
+            $query->where(function($q) {
+                $q->where('status', 'moderation')
+                  ->orWhere('has_reported_content', true);
+            });
         }
         
-        $properties = $query->latest()->paginate(10);
+        // Apply search if provided
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('owner', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Apply sorting
+        if ($sort === 'owner_name') {
+            $query->join('users', 'properties.user_id', '=', 'users.id')
+                ->orderBy('users.name', $direction)
+                ->select('properties.*');
+        } elseif (in_array($sort, ['name', 'price', 'status', 'created_at'])) {
+            $query->orderBy($sort, $direction);
+        }
+        
+        $properties = $query->latest()->paginate(10)->withQueryString();
         
         return Inertia::render('admin/properties/index', [
             'properties' => $properties,
             'filters' => [
-                'status' => $status
+                'status' => $status,
+                'search' => $search,
+                'sort' => $sort,
+                'direction' => $direction
             ]
         ]);
     }
@@ -61,7 +94,7 @@ class PropertyController extends Controller
      */
     public function show(Property $property)
     {
-        $property->load(['owner', 'category', 'facilities']);
+        $property->load(['owner', 'category', 'facilities', 'modifiedBy']);
         
         return Inertia::render('admin/properties/show', [
             'property' => $property
@@ -73,8 +106,12 @@ class PropertyController extends Controller
      */
     public function edit(Property $property)
     {
-        // Admin doesn't edit properties directly
-        return redirect()->route('admin.properties.index');
+        $categories = Category::all();
+        
+        return Inertia::render('admin/properties/edit', [
+            'property' => $property->load('category', 'owner', 'facilities'),
+            'categories' => $categories
+        ]);
     }
 
     /**
@@ -82,8 +119,21 @@ class PropertyController extends Controller
      */
     public function update(Request $request, Property $property)
     {
-        // Admin doesn't update properties directly
-        return redirect()->route('admin.properties.index');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'nullable|exists:categories,id',
+            'is_featured' => 'boolean',
+            'has_reported_content' => 'boolean',
+        ]);
+        
+        $property->update($validated);
+        $property->last_modified_by = Auth::id();
+        $property->save();
+        
+        return redirect()->route('admin.properties.show', $property)
+            ->with('success', 'Properti berhasil diperbarui');
     }
 
     /**
@@ -108,7 +158,7 @@ class PropertyController extends Controller
         
         $property->status = 'approved';
         $property->approved_at = now();
-        $property->approved_by = Auth::id();
+        $property->last_modified_by = Auth::id();
         $property->save();
         
         // TODO: Send notification to owner
@@ -118,43 +168,57 @@ class PropertyController extends Controller
     }
     
     /**
-     * Show the rejection form
-     */
-    public function showRejectForm(Property $property)
-    {
-        if ($property->status !== 'pending') {
-            return redirect()->route('admin.properties.index')
-                ->with('error', 'Only pending properties can be rejected');
-        }
-        
-        return Inertia::render('admin/properties/reject', [
-            'property' => $property
-        ]);
-    }
-    
-    /**
-     * Reject a property listing
+     * Reject a property listing with a reason
      */
     public function reject(Request $request, Property $property)
     {
         if ($property->status !== 'pending') {
-            return redirect()->route('admin.properties.index')
-                ->with('error', 'Only pending properties can be rejected');
+            return redirect()->back()
+                ->with('error', 'Hanya properti dengan status menunggu yang dapat ditolak');
         }
         
         $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:1000'
+            'reason' => 'required|string|max:1000'
         ]);
         
         $property->status = 'rejected';
         $property->rejected_at = now();
-        $property->rejected_by = Auth::id();
-        $property->rejection_reason = $validated['rejection_reason'];
+        $property->rejection_reason = $validated['reason'];
+        $property->last_modified_by = Auth::id();
         $property->save();
         
         // TODO: Send notification to owner
         
         return redirect()->route('admin.properties.index')
-            ->with('success', 'Property rejected successfully');
+            ->with('success', 'Properti berhasil ditolak');
+    }
+    
+    /**
+     * Mark a property for content moderation
+     */
+    public function moderate(Property $property)
+    {
+        $property->status = 'moderation';
+        $property->has_reported_content = true;
+        $property->last_modified_by = Auth::id();
+        $property->save();
+        
+        return redirect()->route('admin.properties.index')
+            ->with('success', 'Properti telah ditandai untuk moderasi konten');
+    }
+    
+    /**
+     * Toggle the featured status of a property
+     */
+    public function toggleFeatured(Property $property)
+    {
+        $property->is_featured = !$property->is_featured;
+        $property->last_modified_by = Auth::id();
+        $property->save();
+        
+        $status = $property->is_featured ? 'diaktifkan' : 'dinonaktifkan';
+        
+        return redirect()->back()
+            ->with('success', "Status unggulan properti berhasil {$status}");
     }
 }
