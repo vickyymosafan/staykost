@@ -144,7 +144,8 @@ class PropertyController extends Controller
     {
         $property->load(['owner', 'category', 'facilities', 'modifiedBy']);
         
-        return Inertia::render('admin/properties/show', [
+        // Sesuaikan case dengan nama file yang benar (Show dengan S kapital)
+        return Inertia::render('admin/properties/Show', [
             'property' => $property
         ]);
     }
