@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/form-select';
-import { Edit, Plus, Search, Trash2, User, UserCheck, Check, X } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, User, UserCheck, Check, X, FileText } from 'lucide-react';
 import { useState, ChangeEvent } from 'react';
 
 interface PaginationLink {
@@ -71,6 +71,7 @@ interface User {
   role: 'admin' | 'owner' | 'user';
   verification_status: 'unverified' | 'pending' | 'verified';
   created_at: string;
+  id_card_path: string | null;
 }
 
 interface Props {
@@ -163,9 +164,13 @@ export default function UserIndex({ users, filters }: Props) {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Manajemen Pengguna</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {verificationStatus === 'pending' ? 'Verifikasi & KYC' : 'Manajemen Pengguna'}
+            </h1>
             <p className="text-muted-foreground">
-              {verificationStatus === 'pending' ? 'Verifikasi & KYC - Dokumen yang menunggu verifikasi' : 'Kelola semua pengguna dan akun'}
+              {verificationStatus === 'pending' 
+                ? 'Kelola verifikasi dokumen identitas pengguna' 
+                : 'Kelola semua pengguna dan akun'}
             </p>
           </div>
           <Link href={route('admin.users.create')}>
@@ -201,13 +206,13 @@ export default function UserIndex({ users, filters }: Props) {
               className="w-full sm:w-auto gap-2"
             >
               <X className="h-4 w-4" />
-              Belum Terverifikasi
+              Belum Diverifikasi
             </Button>
           </Link>
           <Link href={route('admin.users.index')}>  
             <Button
               variant={!verificationStatus ? 'default' : 'outline'}
-              className="w-full sm:w-auto gap-2"  
+              className="w-full sm:w-auto gap-2"
             >
               <User className="h-4 w-4" />
               Semua Pengguna
@@ -253,127 +258,143 @@ export default function UserIndex({ users, filters }: Props) {
               <option value="pending">Menunggu</option>
               <option value="verified">Terverifikasi</option>
             </Select>
-            <Button onClick={search} className="md:w-24">
-              Filter
-            </Button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th 
+                    className="px-6 py-3 cursor-pointer" 
                     onClick={() => sort('name')}
                   >
-                    Nama {sortField === 'name' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    <div className="flex items-center gap-1">
+                      Nama
+                      {sortField === 'name' && (
+                        <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
-                    onClick={() => sort('email')}
+                  <th 
+                    className="px-6 py-3 cursor-pointer"
+                    onClick={() => sort('email')} 
                   >
-                    Email {sortField === 'email' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    <div className="flex items-center gap-1">
+                      Email
+                      {sortField === 'email' && (
+                        <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  <th 
+                    className="px-6 py-3 cursor-pointer"
                     onClick={() => sort('role')}
                   >
-                    Peran {sortField === 'role' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    <div className="flex items-center gap-1">
+                      Peran
+                      {sortField === 'role' && (
+                        <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  <th 
+                    className="px-6 py-3 cursor-pointer"
                     onClick={() => sort('verification_status')}
                   >
-                    Status Verifikasi {sortField === 'verification_status' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    <div className="flex items-center gap-1">
+                      Status Verifikasi
+                      {sortField === 'verification_status' && (
+                        <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  <th 
+                    className="px-6 py-3 cursor-pointer"
                     onClick={() => sort('created_at')}
                   >
-                    Dibuat {sortField === 'created_at' && (sortDirection === 'asc' ? 'u2191' : 'u2193')}
+                    <div className="flex items-center gap-1">
+                      Tanggal Dibuat
+                      {sortField === 'created_at' && (
+                        <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Aksi
-                  </th>
+                  <th className="px-6 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {users.data.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      Tidak ada pengguna yang ditemukan
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {users.data.map((user) => (
+                  <tr key={user.id} className="bg-white dark:bg-gray-800">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-gray-100">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                        {roleLabels[user.role] || user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${verificationColors[user.verification_status] || ''}`}>
+                        {verificationLabels[user.verification_status] || user.verification_status}
+                      </span>
+                      {user.verification_status === 'pending' && user.id_card_path && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          <FileText className="h-3 w-3 inline" /> Dokumen tersedia
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end gap-2">
+                        <Link href={route('admin.users.show', user.id)}>
+                          <Button variant="outline" size="sm">
+                            {user.verification_status === 'pending' ? (
+                              <>
+                                <UserCheck className="h-4 w-4 mr-1" /> Verifikasi KYC
+                              </>
+                            ) : (
+                              <>
+                                <User className="h-4 w-4 mr-1" /> Detail
+                              </>
+                            )}
+                          </Button>
+                        </Link>
+                        <Link href={route('admin.users.edit', user.id)}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button variant="outline" size="sm" onClick={() => deleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  users.data.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                            <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">{user.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {roleLabels[user.role] || user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${verificationColors[user.verification_status] || ''}`}
-                        >
-                          {verificationLabels[user.verification_status] || user.verification_status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <Link href={route('admin.users.show', user.id)} className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-                            <Button variant="ghost" size="sm">
-                              Lihat
-                            </Button>
-                          </Link>
-                          <Link href={route('admin.users.edit', user.id)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
 
-          {users.last_page > 1 && (
-            <div className="px-6 py-4 border-t">
-              <Pagination links={users.links} />
+          <div className="p-4 border-t flex justify-between items-center">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Menampilkan {users.data.length} dari {users.current_page} halaman
             </div>
-          )}
+            <Pagination links={users.links} />
+          </div>
         </div>
       </div>
     </AppLayout>
