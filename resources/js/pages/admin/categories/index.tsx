@@ -150,7 +150,7 @@ const CategoriesTable = ({ categories, activeType }: { categories?: { data: Cate
       </Table>
 
       {categories.meta && (
-        <div className="mt-6">
+        <div className="mt-6 flex justify-center">
           <Pagination
             current_page={categories.meta.current_page}
             last_page={categories.meta.last_page}
@@ -189,36 +189,38 @@ export default function CategoriesIndex({ categories, type = 'room_type', filter
     <AppLayout>
       <Head title="Kategori" />
       
-      <div className="container py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Kategori</h1>
-          <Button asChild>
-            <Link href={route('admin.categories.create')}>
-              <PlusCircle className="h-4 w-4 mr-2" /> Tambah Kategori
-            </Link>
-          </Button>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Semua Kategori</CardTitle>
-            <CardDescription>Kelola kategori untuk properti, fasilitas, dan lokasi</CardDescription>
-          </CardHeader>
+      <div className="flex flex-col items-center py-8 px-4">
+        <div className="w-full max-w-5xl">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Kategori</h1>
+            <Button asChild>
+              <Link href={route('admin.categories.create')}>
+                <PlusCircle className="h-4 w-4 mr-2" /> Tambah Kategori
+              </Link>
+            </Button>
+          </div>
           
-          <CardContent>
-            <Tabs defaultValue={activeType} value={activeType} onValueChange={handleTypeChange}>
-              <TabsList className="mb-4">
-                {Object.entries(CATEGORY_TYPES).map(([value, label]) => (
-                  <TabsTrigger key={value} value={value}>{label}</TabsTrigger>
-                ))}
-              </TabsList>
-              
-              <TabsContent value={activeType}>
-                <CategoriesTable categories={categories} activeType={activeType} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+          <Card className="shadow-md">
+            <CardHeader className="border-b">
+              <CardTitle>Semua Kategori</CardTitle>
+              <CardDescription>Kelola kategori untuk properti, fasilitas, dan lokasi</CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-6">
+              <Tabs defaultValue={activeType} value={activeType} onValueChange={handleTypeChange} className="w-full">
+                <TabsList className="mb-6 mx-auto flex justify-center">
+                  {Object.entries(CATEGORY_TYPES).map(([value, label]) => (
+                    <TabsTrigger key={value} value={value}>{label}</TabsTrigger>
+                  ))}
+                </TabsList>
+                
+                <TabsContent value={activeType}>
+                  <CategoriesTable categories={categories} activeType={activeType} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );
