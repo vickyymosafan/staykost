@@ -28,8 +28,16 @@ interface Property {
     email: string;
   };
   price: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'moderation';
   created_at: string;
+  description?: string;
+  is_featured?: boolean;
+  has_reported_content?: boolean;
+  rejection_reason?: string;
+  last_modified_by?: {
+    id: number;
+    name: string;
+  };
 }
 
 interface PropertiesIndexProps {
@@ -71,6 +79,8 @@ const PropertyStatusBadge = ({ status }: { status: string }) => {
       return <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3" /> Disetujui</Badge>;
     case 'rejected':
       return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="h-3 w-3" /> Ditolak</Badge>;
+    case 'moderation':
+      return <Badge variant="outline" className="flex items-center gap-1 bg-orange-50 text-orange-700 border-orange-200"><AlertTriangle className="h-3 w-3" /> Perlu Moderasi</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -128,6 +138,14 @@ const PropertyTableHeader = ({
             Status {getSortIcon('status')}
           </div>
         </TableHead>
+        <TableHead 
+          className="cursor-pointer"
+          onClick={() => onSort('created_at')}
+        >
+          <div className="flex items-center">
+            Tanggal Dibuat {getSortIcon('created_at')}
+          </div>
+        </TableHead>
         <TableHead className="text-right">Aksi</TableHead>
       </TableRow>
     </TableHeader>
@@ -145,7 +163,7 @@ const PropertyEmptyState = ({
 }) => {
   return (
     <TableRow>
-      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
         <div className="flex flex-col items-center justify-center">
           <Building className="h-12 w-12 text-muted-foreground/50 mb-3" />
           <h3 className="text-lg font-medium mb-1">Tidak ada properti ditemukan</h3>
@@ -207,6 +225,7 @@ const PropertySearchFilters = ({
             <SelectItem value="pending">Menunggu Persetujuan</SelectItem>
             <SelectItem value="approved">Disetujui</SelectItem>
             <SelectItem value="rejected">Ditolak</SelectItem>
+            <SelectItem value="moderation">Perlu Moderasi</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -217,9 +236,27 @@ const PropertySearchFilters = ({
 // Missing import statements
 import { TableHead, TableHeader } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Search, Filter, ChevronsUpDown } from 'lucide-react';
+import { 
+  Clock, 
+  Search, 
+  Filter, 
+  ChevronsUpDown, 
+  AlertTriangle, 
+  Star,
+  Loader2
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function PropertiesIndex({ properties, filters }: PropertiesIndexProps) {
   // State management
@@ -233,6 +270,7 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
     pending: 'Menunggu',
     approved: 'Disetujui',
     rejected: 'Ditolak',
+    moderation: 'Perlu Moderasi',
   };
 
   // Handlers
@@ -322,6 +360,7 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
                         <TableCell>{property.category?.name || '-'}</TableCell>
                         <TableCell>{formatPrice(property.price)}</TableCell>
                         <TableCell><PropertyStatusBadge status={property.status} /></TableCell>
+                        <TableCell>{property.created_at}</TableCell>
                         <TableCell className="text-right">
                           <PropertyActions property={property} />
                         </TableCell>
@@ -363,59 +402,153 @@ export default function PropertiesIndex({ properties, filters }: PropertiesIndex
 
 // Property Actions Component
 const PropertyActions = ({ property }: { property: Property }) => {
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleApprove = () => {
+    if (confirm('Apakah Anda yakin ingin menyetujui properti ini?')) {
+      router.put(route('admin.properties.approve', property.id));
+    }
+  };
+
+  const handleReject = () => {
+    setIsSubmitting(true);
+    router.put(
+      route('admin.properties.reject', property.id), 
+      { reason: rejectionReason },
+      {
+        onSuccess: () => {
+          setIsRejectDialogOpen(false);
+          setRejectionReason('');
+          setIsSubmitting(false);
+        },
+        onError: () => {
+          setIsSubmitting(false);
+        }
+      }
+    );
+  };
+
+  const handleModeration = () => {
+    if (confirm('Tandai properti ini untuk moderasi konten?')) {
+      router.put(route('admin.properties.moderate', property.id));
+    }
+  };
+
+  const handleFeature = () => {
+    router.put(route('admin.properties.toggle-featured', property.id));
+  };
+
   return (
-    <div className="flex items-center justify-end gap-1">
-      <Button variant="ghost" size="icon" asChild className="h-8 w-8" title="Lihat Detail">
-        <Link href={route('admin.properties.show', property.id)}>
-          <span className="sr-only">Lihat</span>
-          <Eye className="h-4 w-4" />
-        </Link>
-      </Button>
-      
-      {property.status === 'pending' && (
-        <>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-            title="Setujui"
-            onClick={() => {
-              if (confirm('Apakah Anda yakin ingin menyetujui properti ini?')) {
-                router.put(route('admin.properties.approve', property.id));
-              }
-            }}
-          >
-            <span className="sr-only">Setujui</span>
-            <CheckCircle className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-            title="Tolak" 
-            asChild
-          >
-            <Link href={route('admin.properties.reject-form', property.id)}>
+    <>
+      <div className="flex items-center justify-end gap-1">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8" title="Lihat Detail">
+          <Link href={route('admin.properties.show', property.id)}>
+            <span className="sr-only">Lihat</span>
+            <Eye className="h-4 w-4" />
+          </Link>
+        </Button>
+        
+        {property.status === 'pending' && (
+          <>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              title="Setujui"
+              onClick={handleApprove}
+            >
+              <span className="sr-only">Setujui</span>
+              <CheckCircle className="h-4 w-4" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              title="Tolak" 
+              onClick={() => setIsRejectDialogOpen(true)}
+            >
               <span className="sr-only">Tolak</span>
               <XCircle className="h-4 w-4" />
-            </Link>
+            </Button>
+          </>
+        )}
+
+        {property.has_reported_content && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            title="Moderasi Konten" 
+            onClick={handleModeration}
+          >
+            <span className="sr-only">Moderasi</span>
+            <AlertTriangle className="h-4 w-4" />
           </Button>
-        </>
-      )}
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-        title="Edit"
-        asChild
-      >
-        <Link href={route('admin.properties.edit', property.id)}>
-          <span className="sr-only">Edit</span>
-          <Edit className="h-4 w-4" />
-        </Link>
-      </Button>
-    </div>
+        )}
+
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={`h-8 w-8 ${property.is_featured ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50' : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'}`}
+          title={property.is_featured ? "Hapus Fitur" : "Jadikan Fitur"}
+          onClick={handleFeature}
+        >
+          <span className="sr-only">{property.is_featured ? "Hapus Fitur" : "Jadikan Fitur"}</span>
+          <Star className={`h-4 w-4 ${property.is_featured ? 'fill-yellow-500' : ''}`} />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          title="Edit"
+          asChild
+        >
+          <Link href={route('admin.properties.edit', property.id)}>
+            <span className="sr-only">Edit</span>
+            <Edit className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+
+      {/* Rejection Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tolak Properti</DialogTitle>
+            <DialogDescription>
+              Masukkan alasan penolakan properti ini. Alasan akan dikirimkan kepada pemilik properti.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="reason">Alasan Penolakan</Label>
+              <Textarea
+                id="reason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Contoh: Foto tidak jelas, deskripsi tidak lengkap, dll."
+                className="resize-none"
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>Batal</Button>
+            <Button 
+              onClick={handleReject} 
+              disabled={!rejectionReason.trim() || isSubmitting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Tolak Properti
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
