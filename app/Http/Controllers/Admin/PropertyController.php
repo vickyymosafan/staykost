@@ -76,8 +76,13 @@ class PropertyController extends Controller
      */
     public function create()
     {
-        // Admin doesn't create properties directly, redirecting to listing
-        return redirect()->route('admin.properties.index');
+        $categories = Category::all();
+        
+        // Gunakan nama file dengan case yang tepat (Create dengan C kapital)
+        return Inertia::render('admin/properties/Create', [
+            'categories' => $categories,
+            'debug' => true
+        ]);
     }
 
     /**
@@ -85,8 +90,52 @@ class PropertyController extends Controller
      */
     public function store(Request $request)
     {
-        // Admin doesn't create properties directly
-        return redirect()->route('admin.properties.index');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'nullable|exists:categories,id',
+            'deposit_amount' => 'nullable|numeric|min:0',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'nullable|string',
+            'zip_code' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'capacity' => 'nullable|integer|min:1',
+            'is_available' => 'boolean',
+            'status' => 'required|in:pending,approved,rejected'
+        ]);
+
+        // Create slug from name
+        $slug = \Illuminate\Support\Str::slug($validated['name']);
+        
+        // Check for unique slug
+        $count = 0;
+        $originalSlug = $slug;
+        while (Property::where('slug', $slug)->exists()) {
+            $count++;
+            $slug = $originalSlug . '-' . $count;
+        }
+        
+        // Tambahkan data tambahan
+        $validated['slug'] = $slug;
+        $validated['user_id'] = $request->input('user_id') ?? Auth::id(); // Default to current admin if not specified
+        $validated['last_modified_by'] = Auth::id();
+        
+        if ($validated['status'] === 'approved') {
+            $validated['approved_at'] = now();
+        }
+        
+        $property = Property::create($validated);
+        
+        // Attach facilities if present
+        if ($request->has('facilities')) {
+            $property->facilities()->attach($request->input('facilities'));
+        }
+        
+        return redirect()->route('admin.properties.show', $property)
+            ->with('success', 'Properti berhasil dibuat');
     }
 
     /**

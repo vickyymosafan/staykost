@@ -27,6 +27,11 @@ Route::get('/property/{property}', function($property) {
 // API endpoint untuk dashboard admin - pastikan ini tersedia tanpa middleware
 Route::get('/api/admin/dashboard', [DashboardController::class, 'apiData']);
 
+// Debug route
+Route::get('/debug-page', function() {
+    return Inertia::render('debug');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Main dashboard route - redirects to the appropriate dashboard based on role
     Route::get('/dashboard', function () {
